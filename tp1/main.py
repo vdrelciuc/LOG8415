@@ -3,9 +3,9 @@ import time
 
 T2_CLUSTER_ELB = 'http://t2-app-load-balancer-865787253.us-east-1.elb.amazonaws.com/'
 M4_CLUSTER_ELB = 'http://m4-app-load-balancer-41265058.us-east-1.elb.amazonaws.com/'
-AWS_ACCESS_KEY_ID = 'XXX'
-AWS_SECRET_ACCESS_KEY = 'YYY'
-AWS_SESSION_TOKEN = 'ZZZ'
+AWS_ACCESS_KEY_ID = 'ASIAY66MJR2U6QSY4VPF'
+AWS_SECRET_ACCESS_KEY = '4FRTOLfAm7o+OoEEV76zR8CssHNNGiyYHJHOAxzF'
+AWS_SESSION_TOKEN = 'FwoGZXIvYXdzEL7//////////wEaDNPaJ/CJydZVgEVrGCLDAT2XkbKOUZ2P9BkPVerPllmr/q46JYr8PvKL/Fy8vvekODwYGz48HZ6UmEsEz/J3SJhNTXe5ABarmdyoFB1dIhuuaog/5IgcZiTw4HbtWOYuWeuQY7Sw5vyqlMqfkDPlUBcJdFIcjNaFZ6HZ+I3EZZELUfDogK294GGpUElZu6i/wLM2/RAeQMK/gRjbUHoQk73w/ZDMMi/66W82RPPFQS2PFJd8OJ85fEKD/hI/RG7pFs2vr/jzmaeWn44ElzqXc0tfmiiIpN2ZBjItCPNf0JAEQOIelJNtEAG/xn+0gnRvfty/xT31drcGzuMbBnw5I+WeSLyjN54t'
 
 def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
