@@ -16,6 +16,10 @@ ELB_CLOUDWATCH_METRICS = ['ActiveConnectionCount', 'ConsumedLCUs', 'RequestCount
 
 # DEFINE FUNCTIONS HERE
 
+def initialize_infra():
+    # TODO: implement
+    return {}
+
 def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
     request = requests.get(cluster, headers=headers)
@@ -74,23 +78,26 @@ def generate_graphs(metrics):
 
 # PROGRAM EXECUTION
 
-# 1. Run first workload
+# 1. Generate infrastructure (EC2 instances, load balancers and target groups)
+initialize_infra()
+
+# 2. Run first workload
 # run_first_workload() # uncomment to execute workload (takes ~1 min)
 
-# 2. Run second workload
+# 3. Run second workload
 # run_second_workload() # uncomment to execute workload (takes ~ 3 min)
 
-# 3. Create CloudWatch client using boto3
+# 4. Create CloudWatch client using boto3
 cw_client = initialize_cloudwatch()
 
-# 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
+# 5. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 query = build_cloudwatch_query()
 
-# 5. Query CloudWatch client using built query 
+# 6. Query CloudWatch client using built query 
 response = get_data(cw_client=cw_client, query=query)
 
-# 6. Parse MetricDataResults and store metrics
+# 7. Parse MetricDataResults and store metrics
 metrics = parse_data(response)
 
-# 7. Generate graphs and save under /metrics folder
+# 8. Generate graphs and save under /metrics folder
 generate_graphs(metrics)
