@@ -6,9 +6,11 @@ import time
 
 T2_CLUSTER_ELB = 'http://t2-app-load-balancer-865787253.us-east-1.elb.amazonaws.com/'
 M4_CLUSTER_ELB = 'http://m4-app-load-balancer-41265058.us-east-1.elb.amazonaws.com/'
+'''
 AWS_ACCESS_KEY_ID = 'ASIAY66MJR2U4XF6UEEJ'
 AWS_SECRET_ACCESS_KEY = 'ay3MA1ep8BL8VfB4oEyabetu/AUcWnpBiby3FE1E'
 AWS_SESSION_TOKEN = 'FwoGZXIvYXdzEOv//////////wEaDNeUebVcXeb9BkVOWyLDAdnNimCUhv7s3OFRP9QEVcp5cixFhW+wwh0B+mlTTyRJWeoyPILwWoiN+FLRWM3saBQbhl4AVofPFINMjm+KTmKRjFMnCVpz1T6iskCHeckNL9DY61EPAFBs/GO+3i2ECk4PmtcpJzSDtxPkv/yYBQ7IcxE1hwnuSqhyIezs3QvJrARW61yLu2VG8ToJh4UXsrxa4FQxEFQ3IhZjbxCArnHyV43oQCCgNebj5rRDlS0FPlIX98Q7Nc91OcjUL6MkBeJjSiiml+eZBjItPtJeXMP0/uVUqKahN8Zxri3ja/tR8I3M4UJF59frn7tCjIySVFfHlrJ4zt4V'
+'''
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount'] 
@@ -24,6 +26,12 @@ def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
     request = requests.get(cluster, headers=headers)
     # print(request.text) # uncomment to see individual instance_id
+
+def get_load_balancers():
+    aws_session = boto3.Session(profile_name="default")
+    elb_client = aws_session.client('elbv2', region_name='us-east-1')
+    response = elb_client.describe_load_balancers()
+    print(response)
 
 def run_first_workload():
     # 1000 GET requests sequentially
@@ -78,6 +86,9 @@ def generate_graphs(metrics):
 
 # PROGRAM EXECUTION
 
+get_load_balancers()
+
+'''
 # 1. Generate infrastructure (EC2 instances, load balancers and target groups)
 initialize_infra()
 
@@ -101,3 +112,4 @@ metrics = parse_data(response)
 
 # 8. Generate graphs and save under /metrics folder
 generate_graphs(metrics)
+'''
