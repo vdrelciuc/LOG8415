@@ -2,10 +2,8 @@ from datetime import datetime
 from datetime import timedelta
 import boto3
 import requests
+import threading
 import time
-
-T2_CLUSTER_ELB = 'http://t2-app-load-balancer-865787253.us-east-1.elb.amazonaws.com/'
-M4_CLUSTER_ELB = 'http://m4-app-load-balancer-41265058.us-east-1.elb.amazonaws.com/'
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount'] 
@@ -19,44 +17,48 @@ def initialize_infra():
 
 def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
-    request = requests.get(cluster, headers=headers)
+    url = 'http://' + cluster
+    request = requests.get(url, headers=headers)
     # print(request.text) # uncomment to see individual instance_id
 
-def get_load_balancers():
-    elb_client = boto3.client('elbv2', region_name='us-east-1')
-    response = elb_client.describe_load_balancers()
-    balancer1=response['LoadBalancers'][0]['DNSName']
-    balancer2=response['LoadBalancers'][1]['DNSName']
-
-    print(balancer1)
-    print(balancer2)
-
-def run_first_workload():
+def run_first_workload(t2_cluster, m4_cluster):
     # 1000 GET requests sequentially
     print('Starting first workload...')
-    for _ in range(1000):
-        call_endpoint_http(T2_CLUSTER_ELB)
-        call_endpoint_http(M4_CLUSTER_ELB)
+    for _ in range(10): # TODO: update with real values
+        call_endpoint_http(t2_cluster)
+        call_endpoint_http(m4_cluster)
     print('Finishing first workload...')
 
-def run_second_workload():
+def run_second_workload(t2_cluster, m4_cluster):
     # 500 GET requests, then one minute sleep, followed by 1000 GET requests
     print('Starting second workload...')
-    for _ in range(500):
-        call_endpoint_http(T2_CLUSTER_ELB)
-        call_endpoint_http(M4_CLUSTER_ELB)
+    for _ in range(5): # TODO: update with real values
+        call_endpoint_http(t2_cluster)
+        call_endpoint_http(m4_cluster)
 
-    time.sleep(60)
+    time.sleep(6) # TODO: update with real values
 
-    for _ in range(1000):
-        call_endpoint_http(T2_CLUSTER_ELB)
-        call_endpoint_http(M4_CLUSTER_ELB)
+    for _ in range(10): # TODO: update with real values
+        call_endpoint_http(t2_cluster)
+        call_endpoint_http(m4_cluster)
     print('Finishing second workload...')
 
+def run_workloads(elb_client):
+    response = elb_client.describe_load_balancers()
+    t2_cluster = response['LoadBalancers'][0]['DNSName'] # TODO: update hardcoded cluster
+    m4_cluster = response['LoadBalancers'][1]['DNSName'] # TODO: update hardcoded cluster
+
+    first_workload_thread = threading.Thread(target=run_first_workload, args=(t2_cluster,m4_cluster))
+    second_workload_thread = threading.Thread(target=run_second_workload, args=(t2_cluster,m4_cluster))
+
+    first_workload_thread.start()
+    second_workload_thread.start()
+
+    first_workload_thread.join()
+    second_workload_thread.join()
+
 def initialize_cloudwatch():
-    return boto3.client(
-        'cloudwatch', 
-        region_name='us-east-1')
+    return boto3.client('cloudwatch')
 
 def build_cloudwatch_query():
     # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
@@ -81,28 +83,27 @@ def generate_graphs(metrics):
 
 # PROGRAM EXECUTION
 
-get_load_balancers()
+# 1. Initialize AWS clients
+elb_client = boto3.client('elbv2')
+cw_client = boto3.client('cloudwatch')
 
-# 1. Generate infrastructure (EC2 instances, load balancers and target groups)
+# 2. Generate infrastructure (EC2 instances, load balancers and target groups)
 initialize_infra()
 
-# 2. Run first workload
-# run_first_workload() # uncomment to execute workload (takes ~1 min)
+# 3. Run workloads
+run_workloads(elb_client)
 
-# 3. Run second workload
-# run_second_workload() # uncomment to execute workload (takes ~ 3 min)
-
-# 4. Create CloudWatch client using boto3
-cw_client = initialize_cloudwatch()
-
-# 5. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
+# 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 query = build_cloudwatch_query()
 
-# 6. Query CloudWatch client using built query 
+'''
+# 5. Query CloudWatch client using built query 
 response = get_data(cw_client=cw_client, query=query)
 
-# 7. Parse MetricDataResults and store metrics
+# 6. Parse MetricDataResults and store metrics
 metrics = parse_data(response)
 
-# 8. Generate graphs and save under /metrics folder
+# 7. Generate graphs and save under /metrics folder
 generate_graphs(metrics)
+'''
+print('Done')
