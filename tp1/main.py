@@ -58,7 +58,59 @@ def initialize_cloudwatch():
 def build_cloudwatch_query():
     # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
     # TODO: implement using template in doc
-    return {}
+    targetgroup_val_1, targetgroup_val_2 = "targetgroup/t2-app-load", "targetgroup/m4-app-load-balancer"
+    loadbal_val_1, loadbal_val_2 = "app/t2-app-load", "app/m4-app-load-balancer"
+    response_elb = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
+        {
+            'Name': 'LoadBalancer',
+        },
+    ])
+    response_tg = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
+        {
+            'Name': 'TargetGroup',
+        },
+    ])
+    for response in response_elb["Metrics"]:
+        dimension = response["Dimensions"][0]
+        if targetgroup_val_1 in dimension["Value"]:
+            dimension_tg_1 = dimension
+        elif targetgroup_val_2 in dimension["Value"]:
+            dimension_tg_2 = dimension
+    
+    for response in response_tg["Metrics"]:
+        dimension = response["Dimensions"][0]
+        if loadbal_val_1 in dimension["Value"]:
+            dimension_lb_1 = dimension
+        elif loadbal_val_2 in dimension["Value"]:
+            dimension_lb_2 = dimension
+
+    metricDataQy = []
+    metric_pipeline = [(1, dimension_tg_1, TARGET_GROUP_CLOUDWATCH_METRICS), (2, dimension_tg_2, TARGET_GROUP_CLOUDWATCH_METRICS), 
+        (1, dimension_lb_1, ELB_CLOUDWATCH_METRICS), (2, dimension_lb_2, ELB_CLOUDWATCH_METRICS)]
+    for metric_action in metric_pipeline:
+        appendMetricDataQy(metricDataQy, metric_action[0], metric_action[2], metric_action[1])
+    return metricDataQy
+
+def appendMetricDataQy(container, cluster_id, metrics, dimension):
+    for metric in metrics:
+        container.append({
+            "Id": metric + dimension["Name"] + cluster_id,
+            "MetricStat": {
+                "Metric": {
+                    "Namespace": "AWS/ApplicationELB",
+                    "MetricName": metric,
+                    "Dimensions": [
+                        {
+                            "Name": dimension["Name"],
+                            "Value": dimension["Value"]
+                        }
+                    ]
+                },
+                "Period": 60,
+                "Stat": "Average",
+            }
+        })
+    
 
 def get_data(cw_client, query):
     return cw_client.get_metric_data(
@@ -91,6 +143,7 @@ initialize_infra()
 cw_client = initialize_cloudwatch()
 
 # 5. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
+
 query = build_cloudwatch_query()
 
 # 6. Query CloudWatch client using built query 
