@@ -18,6 +18,31 @@ ELB_CLOUDWATCH_METRICS = ['ActiveConnectionCount', 'ConsumedLCUs', 'RequestCount
 
 def initialize_infra():
     # TODO: implement
+    ec2_client = boto3.client('ec2',
+        region_name='us-east-1',
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        aws_session_token=AWS_SESSION_TOKEN
+        )
+    
+    ec2_client.run_instances(
+        InstanceType='t2.large',
+        MinCount=1,
+        MaxCount=5,
+        ImageId='ami-08c40ec9ead489470',
+        KeyName='vockey'
+        )
+
+    response = ec2_client.describe_instances()
+    
+    print(len(response['Reservations']))
+
+    for ins in response['Reservations']:
+        for x in ins['Instances']:
+            print(x['InstanceId'])
+            print (x['Placement']['AvailabilityZone'])
+   
+
     return {}
 
 def call_endpoint_http(cluster):
@@ -88,16 +113,16 @@ initialize_infra()
 # run_second_workload() # uncomment to execute workload (takes ~ 3 min)
 
 # 4. Create CloudWatch client using boto3
-cw_client = initialize_cloudwatch()
+#cw_client = initialize_cloudwatch()
 
 # 5. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
-query = build_cloudwatch_query()
+#query = build_cloudwatch_query()
 
 # 6. Query CloudWatch client using built query 
-response = get_data(cw_client=cw_client, query=query)
+#response = get_data(cw_client=cw_client, query=query)
 
 # 7. Parse MetricDataResults and store metrics
-metrics = parse_data(response)
+#metrics = parse_data(response)
 
 # 8. Generate graphs and save under /metrics folder
-generate_graphs(metrics)
+#generate_graphs(metrics)
