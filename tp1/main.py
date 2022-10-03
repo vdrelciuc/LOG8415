@@ -1,13 +1,19 @@
-from datetime import datetime 
-from datetime import timedelta
+from datetime import datetime, timedelta
 import boto3
 import requests
 import threading
 import time
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.dates import (DateFormatter)
+matplotlib.use('TkAgg')
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
-TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount'] 
-ELB_CLOUDWATCH_METRICS = ['ActiveConnectionCount', 'ConsumedLCUs', 'RequestCount', 'HTTPCode_ELB_5XX_Count', 'HTTPCode_ELB_503_Count', 'HTTPCode_Target_2XX_Count', 'NewConnectionCount', 'ProcessedBytes', 'TargetResponseTime'] 
+TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
+ELB_CLOUDWATCH_METRICS = ['ActiveConnectionCount', 'ConsumedLCUs', 'RequestCount', 'HTTPCode_ELB_5XX_Count', 'HTTPCode_ELB_503_Count', 'HTTPCode_Target_2XX_Count', 'NewConnectionCount', 'ProcessedBytes', 'TargetResponseTime']
+
+elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
+tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
 
@@ -73,13 +79,40 @@ def get_data(cw_client, query):
     )
 
 def parse_data(response):
-    # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
-    # TODO: implement using template in doc
-    return {}
+    global elb_metrics_count, tg_metrics_count
+    results = response["MetricDataResults"]
 
-def generate_graphs(metrics):
-    # TODO: implement using matplotlib.pyplot
-    return {} # delete return after implement
+    elb_metrics_cluster1 = results[:elb_metrics_count]
+    elb_metrics_cluster2 = results[elb_metrics_count:elb_metrics_count * 2]
+    tg_metrics_cluster1 = results[elb_metrics_count * 2:elb_metrics_count * 2 + tg_metrics_count]
+    tg_metrics_cluster2 = results[elb_metrics_count * 2 + tg_metrics_count:]
+
+    cluster1_data = elb_metrics_cluster1 + tg_metrics_cluster1
+    cluster2_data = elb_metrics_cluster2 + tg_metrics_cluster2
+    return cluster1_data, cluster2_data
+
+
+class MetricData:
+    def __init__(self, metric):
+        self.label = metric["Label"]
+        self.timestamps = metric["Timestamps"]
+        self.values = metric["Values"]
+
+
+def generate_graphs(metrics_cluster1, metrics_cluster2):
+    for i in range(len(metrics_cluster1)):
+        data_cluster1 = MetricData(metrics_cluster1[i])
+        data_cluster2 = MetricData(metrics_cluster2[i])
+        formatter = DateFormatter("%H:%M:%S")
+
+        fig, ax = plt.subplots()
+        ax.xaxis.set_major_formatter(formatter)
+        plt.xlabel("Timestamps")
+        plt.plot(data_cluster1.timestamps, data_cluster1.values, label="Cluster 1")
+        plt.plot(data_cluster2.timestamps, data_cluster2.values, label="Cluster 2")
+        plt.title(data_cluster1.label)
+        plt.legend(loc='best')
+        plt.savefig(f"graphs/{data_cluster1.label}")
 
 # PROGRAM EXECUTION
 
@@ -96,14 +129,12 @@ run_workloads(elb_client)
 # 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 query = build_cloudwatch_query()
 
-'''
-# 5. Query CloudWatch client using built query 
+# 5. Query CloudWatch client using built query
 response = get_data(cw_client=cw_client, query=query)
 
 # 6. Parse MetricDataResults and store metrics
-metrics = parse_data(response)
+(metrics_cluster1, metrics_cluster2) = parse_data(response)
 
 # 7. Generate graphs and save under /metrics folder
-generate_graphs(metrics)
-'''
+generate_graphs(metrics_cluster1, metrics_cluster2)
 print('Done')
