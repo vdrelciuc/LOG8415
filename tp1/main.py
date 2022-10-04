@@ -4,9 +4,10 @@ import requests
 import threading
 import time
 import matplotlib
-import matplotlib.pyplot as plt
+
 from matplotlib.dates import (DateFormatter)
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
@@ -69,7 +70,7 @@ def initialize_cloudwatch():
 def build_cloudwatch_query():
     # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
     # TODO: implement using template in doc
-    targetgroup_val_1, targetgroup_val_2 = "targetgroup/t2-app-load", "targetgroup/m4-app-load-balancer"
+    targetgroup_val_1, targetgroup_val_2 = "targetgroup/t2-target-group", "targetgroup/m4-target-group"
     loadbal_val_1, loadbal_val_2 = "app/t2-app-load", "app/m4-app-load-balancer"
     response_elb = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
         {
@@ -81,6 +82,7 @@ def build_cloudwatch_query():
             'Name': 'TargetGroup',
         },
     ])
+    dimension_tg_1 = dimension_tg_2 = dimension_lb_1 = dimension_lb_2 = None
     for response in response_elb["Metrics"]:
         dimension = response["Dimensions"][0]
         if targetgroup_val_1 in dimension["Value"]:
@@ -89,7 +91,7 @@ def build_cloudwatch_query():
             dimension_tg_2 = dimension
     
     for response in response_tg["Metrics"]:
-        dimension = response["Dimensions"][0]
+        dimension = response["Dimensions"][1]
         if loadbal_val_1 in dimension["Value"]:
             dimension_lb_1 = dimension
         elif loadbal_val_2 in dimension["Value"]:
@@ -105,7 +107,7 @@ def build_cloudwatch_query():
 def appendMetricDataQy(container, cluster_id, metrics, dimension):
     for metric in metrics:
         container.append({
-            "Id": metric + dimension["Name"] + cluster_id,
+            "Id": (metric + dimension["Name"] + str(cluster_id)).lower(),
             "MetricStat": {
                 "Metric": {
                     "Namespace": "AWS/ApplicationELB",
@@ -183,10 +185,11 @@ query = build_cloudwatch_query()
 
 # 5. Query CloudWatch client using built query
 response = get_data(cw_client=cw_client, query=query)
+print(response)
 
 # 6. Parse MetricDataResults and store metrics
 (metrics_cluster1, metrics_cluster2) = parse_data(response)
 
 # 7. Generate graphs and save under /metrics folder
-generate_graphs(metrics_cluster1, metrics_cluster2)
+#generate_graphs(metrics_cluster1, metrics_cluster2)
 print('Done')
