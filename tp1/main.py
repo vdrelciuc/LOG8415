@@ -156,6 +156,62 @@ def initialize_infra(ec2_resource):
 
     return {}
 
+def create_load_balancer(client, name, sg):
+    return client.create_load_balancer(
+        Name=name,
+        SecurityGroups=[
+            sg
+        ],
+        IpAddressType='ipv4'|'dualstack'
+    )
+
+def create_target_group(client, name):
+    return client.create_target_group(
+        Name=name,
+        Protocol='HTTP',
+        Port=80
+    )
+
+def register_targets(client, targetGroup, targets):
+    return client.register_targets(
+        TargetGroupArn=targetGroup['TargetGroups'][0]['TargetGroupArn'],
+        Targets=targets
+    )
+
+def create_listener(client, targetGroup, loadBalancer):
+    return client.create_listener(
+        DefaultActions=[
+            {
+                'TargetGroupArn': targetGroup['TargetGroups'][0]['TargetGroupArn'],
+                'Type': 'forward',
+            },
+        ],
+        LoadBalancerArn=loadBalancer['LoadBalancers'][0]['LoadBalancerArn'],
+        Port=80,
+        Protocol='HTTP',
+    )
+
+def delete_listener(client, listener):
+    client.delete_listener(
+        ListenerArn=listener['Listeners'][0]['ListenerArn']
+    )
+
+def deregister_targets(client, targetGroup, targets):
+    client.deregister_targets(
+        TargetGroupArn=targetGroup['TargetGroups'][0]['TargetGroupArn'],
+        Targets=targets
+    )
+
+def delete_target_group(client, targetGroup):
+        client.delete_target_group(
+        TargetGroupArn=targetGroup['TargetGroups'][0]['TargetGroupArn']
+    )
+
+def delete_load_balancer(client, loadBalancer):
+    client.delete_load_balancer(
+    LoadBalancerArn=loadBalancer['LoadBalancers'][0]['LoadBalancerArn']
+)
+
 def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
     url = 'http://' + cluster
@@ -249,8 +305,18 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
         plt.legend(loc='best')
         plt.savefig(f"graphs/{data_cluster1.label}")
 
-def cleanUp(sg, m4Ins, t2Ins):
+def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
     print("Deleting instances...")
+    for listener in listeners:
+        delete_listener(client, listener)
+    m4Ids = [ins.id for ins in m4Ins]
+    t2Ids = [ins.id for ins in t2Ins]
+    deregister_targets(client, targetGroup[0], m4Ids)
+    deregister_targets(client, targetGroup[1], t2Ids)
+    for targetGroup in targetGroups:
+        delete_target_group(client, targetGroup)
+    for loadBalancer in loadBalancers:
+        delete_load_balancer(client, loadBalancer)
     for instance in m4Ins:
         instance.stop()
         instance.terminate()
@@ -272,10 +338,25 @@ elb_client = boto3.client('elbv2')
 cw_client = boto3.client('cloudwatch')
 
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
+
+
 sg = create_security_group(ec2_resource)
 m4Instances = create_instances(ec2_resource, 'm4.large', 4, 'ami-08c40ec9ead489470', 'vockey')
 t2Instances = create_instances(ec2_resource, 't2.large', 5, 'ami-08c40ec9ead489470', 'vockey')
-cleanUp(sg, m4Instances, t2Instances)
+
+cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', sg)
+cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', sg)
+
+cluster1_tg = create_target_group(elb_client, 'cluster1-tg')
+cluster2_tg = create_target_group(elb_client, 'cluster2-tg')
+
+register_targets(elb_client, cluster1_tg, [ins.id for ins in m4Instances])
+register_targets(elb_client, cluster2_tg, [ins.id for ins in t2Instances])
+
+listener_cluster1 = create_listener(elb_client, cluster1_tg, cluster1_elb)
+listener_cluster2 = create_listener(elb_client, cluster2_tg, cluster2_elb)
+
+cleanUp(elb_client, sg, m4Instances, t2Instances, [listener_cluster1, listener_cluster2], [cluster1_tg, cluster2_tg], [cluster1_elb, cluster2_elb])
 """# 3. Run workloads
 run_workloads(elb_client)
 
