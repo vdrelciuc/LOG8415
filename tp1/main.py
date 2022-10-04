@@ -18,35 +18,19 @@ tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 # DEFINE FUNCTIONS HERE
 
 def create_instances(ec2_resource, instanceType, count, imageId, keyName):
-    ec2_resource.create_instances(
+    return ec2_resource.create_instances(
         InstanceType = instanceType,
         MinCount = count,
         MaxCount = count,
         ImageId = imageId,
-        KeyName = keyName
+        KeyName = keyName,
+        SecurityGroups = ['custom-sec-group']
     )
 
-def getInstanceIds(ec2_client, instanceType):
-    instanceIds = []
-    m4instances = ec2_client.describe_instances()
-    for reservation in m4instances['Reservations']:
-        for instance in reservation['Instances']:
-            if reservation['InstanceType'] == instanceType:
-                print(instance['InstanceId'])
-                instanceIds += instance['InstanceId']
-    
-    return instanceIds
-
-def initialize_infra(ec2_client):
-    # TODO: implement
-
-    #create instances
-    ec2_resource = boto3.resource('ec2')
-    
-    #creating security groups
+def create_security_group(ec2_resource):
     response_vpcs = ec2_client.describe_vpcs()
     vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    response_sg = ec2_client.create_security_group(GroupName='InstanceSecurity',
+    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group',
         Description='Security group for our instances',
         VpcId=vpc_id)
     sg_id = response_sg['GroupId']
@@ -62,11 +46,19 @@ def initialize_infra(ec2_client):
             'ToPort': 22,
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
     ])
-    create_instances(ec2_resource, 'm4.large', 4, 'ami-08c40ec9ead489470', 'vockey')
+    return ec2_resource.SecurityGroup(response_sg['GroupId'])
 
-    m4InstanceIds = getInstanceIds(ec2_client, 'm4.large')
+def initialize_infra(ec2_resource):
+    # TODO: implement
 
-    create_instances(ec2_resource, 't2.large', 5, 'ami-08c40ec9ead489470', 'vockey')
+    #create instances
+    
+    create_security_group(ec2_resource)
+    m4Instances = create_instances(ec2_resource, 'm4.large', 4, 'ami-08c40ec9ead489470', 'vockey')
+
+    #m4InstanceIds = getInstanceIds(ec2_client, 'm4.large')
+
+    t2Instances = create_instances(ec2_resource, 't2.large', 5, 'ami-08c40ec9ead489470', 'vockey')
 
     """#create target groups
     elbv2_client = boto3.client('elbv2')
@@ -202,16 +194,33 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
         plt.legend(loc='best')
         plt.savefig(f"graphs/{data_cluster1.label}")
 
+def cleanUp(sg, m4Ins, t2Ins):
+    print("Deleting instances...")
+    for instance in m4Ins:
+        instance.stop()
+        instance.terminate()
+    
+
+    for instance in t2Ins:
+        instance.stop()
+        instance.terminate()
+    print("Deleting security group...")
+    sg.delete()
+
+
 # PROGRAM EXECUTION
 
 # 1. Initialize AWS clients
 ec2_client = boto3.client('ec2')
+ec2_resource = boto3.resource('ec2')
 elb_client = boto3.client('elbv2')
 cw_client = boto3.client('cloudwatch')
 
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
-initialize_infra(ec2_client)
-
+sg = create_security_group(ec2_resource)
+m4Instances = create_instances(ec2_resource, 'm4.large', 4, 'ami-08c40ec9ead489470', 'vockey')
+t2Instances = create_instances(ec2_resource, 't2.large', 5, 'ami-08c40ec9ead489470', 'vockey')
+cleanUp(sg, m4Instances, t2Instances)
 """# 3. Run workloads
 run_workloads(elb_client)
 
