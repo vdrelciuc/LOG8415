@@ -66,35 +66,90 @@ def initialize_infra(ec2_client):
     elbv2_client.create_target_group(name="t2-target-group")"""
 
     # create load balancer
-    # elb_client = boto3.client('elb')
-    # elb_cluster1 = elb_client.create_load_balancer(
-    # LoadBalancerName='LoadBalancer',
-    # Listeners=[
-    #         {
-    #             'Protocol': 'HTTP',
-    #             'LoadBalancerPort': 80,
-    #             'InstanceProtocol': 'HTTP',
-    #             'InstancePort': 80,
-    #             'SSLCertificateId': 'string'
-    #         },
-    #     ],
-    #     AvailabilityZones=[
-    #         'us-east-1',
-    #     ],
-    #     Subnets=[
-    #         'string',
-    #     ],
-    #     SecurityGroups=[
-    #         'string',
-    #     ],
-    #     Scheme='string',
-    #     Tags=[
-    #         {
-    #             'Key': 'string',
-    #             'Value': 'string'
-    #         },
-    #     ]
-    # )
+    elb_client = boto3.client('elbv2')
+    elb_cluster1 = elb_client.create_load_balancer(
+        Name='elb_cluster1',
+        SecurityGroups=[
+            'InstanceSecurity'
+        ],
+        IpAddressType='ipv4'|'dualstack',
+    )
+    elb_cluster2 = elb_client.create_load_balancer(
+        Name='elb_cluster2',
+        SecurityGroups=[
+            'InstanceSecurity'
+        ],
+        IpAddressType='ipv4'|'dualstack'
+    )
+    cluster1_tg = elb_client.create_target_group(
+        Name='cluster1-tg',
+        Protocol='HTTP',
+        Port=80
+    )
+    cluster2_tg = elb_client.create_target_group(
+        Name='cluster2-tg',
+        Protocol='HTTP',
+        Port=80
+    )
+    elb_client.register_targets(
+        TargetGroupArn=cluster1_tg['TargetGroups'][0]['TargetGroupArn'],
+        Targets=[
+            {
+                'Id': '1'
+            },
+            {
+                'Id': '1'
+            },
+            {
+                'Id': '1'
+            },
+            {
+                'Id': '1'
+            }
+        ]
+    )
+    elb_client.register_targets(
+        TargetGroupArn=cluster2_tg['TargetGroups'][0]['TargetGroupArn'],
+        Targets=[
+            {
+                'Id': '1'
+            },
+            {
+                'Id': '1'
+            },
+            {
+                'Id': '1'
+            },
+            {
+                'Id': '1'
+            },
+            {
+                'Id': '1'
+            }
+        ]
+    )
+    elb_client.create_listener(
+        DefaultActions=[
+            {
+                'TargetGroupArn': cluster1_tg['TargetGroups'][0]['TargetGroupArn'],
+                'Type': 'forward',
+            },
+        ],
+        LoadBalancerArn=elb_cluster1['LoadBalancers'][0]['LoadBalancerArn'],
+        Port=80,
+        Protocol='HTTP',
+    )
+    elb_client.create_listener(
+        DefaultActions=[
+            {
+                'TargetGroupArn': cluster2_tg['TargetGroups'][0]['TargetGroupArn'],
+                'Type': 'forward',
+            },
+        ],
+        LoadBalancerArn=elb_cluster2['LoadBalancers'][0]['LoadBalancerArn'],
+        Port=80,
+        Protocol='HTTP',
+    )
 
 
    
