@@ -18,6 +18,8 @@ ELB_CLOUDWATCH_METRICS = ['ActiveConnectionCount', 'ConsumedLCUs', 'RequestCount
 
 def initialize_infra():
     # TODO: implement
+
+    #create instances
     ec2_client = boto3.client('ec2',
         region_name='us-east-1',
         aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -26,6 +28,14 @@ def initialize_infra():
         )
     
     ec2_client.run_instances(
+        InstanceType='m4.large',
+        MinCount=1,
+        MaxCount=2,
+        ImageId='ami-08c40ec9ead489470',
+        KeyName='vockey'
+        )
+
+    ec2_client.run_instances(
         InstanceType='t2.large',
         MinCount=1,
         MaxCount=5,
@@ -33,14 +43,11 @@ def initialize_infra():
         KeyName='vockey'
         )
 
-    response = ec2_client.describe_instances()
-    
-    print(len(response['Reservations']))
+    #create target groups
+    elbv2_client = boto3.client('elbv2')
+    elbv2_client.create_target_group(name="m4-target-group")
+    elbv2_client.create_target_group(name="t2-target-group")
 
-    for ins in response['Reservations']:
-        for x in ins['Instances']:
-            print(x['InstanceId'])
-            print (x['Placement']['AvailabilityZone'])
    
 
     return {}
