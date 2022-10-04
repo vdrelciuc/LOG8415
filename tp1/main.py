@@ -4,10 +4,10 @@ import requests
 import threading
 import time
 import matplotlib
+import matplotlib.pyplot as plt
 
 from matplotlib.dates import (DateFormatter)
-#matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
+matplotlib.use('TkAgg')
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
@@ -89,7 +89,7 @@ def build_cloudwatch_query():
             dimension_tg_1 = dimension
         elif targetgroup_val_2 in dimension["Value"]:
             dimension_tg_2 = dimension
-    
+
     for response in response_tg["Metrics"]:
         dimension = response["Dimensions"][1]
         if loadbal_val_1 in dimension["Value"]:
@@ -98,7 +98,7 @@ def build_cloudwatch_query():
             dimension_lb_2 = dimension
 
     metricDataQy = []
-    metric_pipeline = [(1, dimension_tg_1, TARGET_GROUP_CLOUDWATCH_METRICS), (2, dimension_tg_2, TARGET_GROUP_CLOUDWATCH_METRICS), 
+    metric_pipeline = [(1, dimension_tg_1, TARGET_GROUP_CLOUDWATCH_METRICS), (2, dimension_tg_2, TARGET_GROUP_CLOUDWATCH_METRICS),
         (1, dimension_lb_1, ELB_CLOUDWATCH_METRICS), (2, dimension_lb_2, ELB_CLOUDWATCH_METRICS)]
     for metric_action in metric_pipeline:
         appendMetricDataQy(metricDataQy, metric_action[0], metric_action[2], metric_action[1])
@@ -123,7 +123,7 @@ def appendMetricDataQy(container, cluster_id, metrics, dimension):
                 "Stat": "Average",
             }
         })
-    
+
 
 def get_data(cw_client, query):
     return cw_client.get_metric_data(
@@ -136,10 +136,10 @@ def parse_data(response):
     global elb_metrics_count, tg_metrics_count
     results = response["MetricDataResults"]
 
-    elb_metrics_cluster1 = results[:elb_metrics_count]
-    elb_metrics_cluster2 = results[elb_metrics_count:elb_metrics_count * 2]
-    tg_metrics_cluster1 = results[elb_metrics_count * 2:elb_metrics_count * 2 + tg_metrics_count]
-    tg_metrics_cluster2 = results[elb_metrics_count * 2 + tg_metrics_count:]
+    tg_metrics_cluster1 = results[:tg_metrics_count]
+    tg_metrics_cluster2 = results[tg_metrics_count:tg_metrics_count * 2]
+    elb_metrics_cluster1 = results[tg_metrics_count * 2:tg_metrics_count * 2 + elb_metrics_count]
+    elb_metrics_cluster2 = results[tg_metrics_count * 2 + elb_metrics_count:]
 
     cluster1_data = elb_metrics_cluster1 + tg_metrics_cluster1
     cluster2_data = elb_metrics_cluster2 + tg_metrics_cluster2
@@ -148,7 +148,12 @@ def parse_data(response):
 
 class MetricData:
     def __init__(self, metric):
-        self.label = metric["Label"]
+        # "app/t2-app-load-balancer/4db0b61e07b90a45 ActiveConnectionCount"
+        label = metric["Label"].split("/")  # ["app", "t2-app-load-balancer", "4db0b61e07b90a45 ActiveConnectionCount"]
+        label[2] = label[2].split()[1]      # ["app", "t2-app-load-balancer", "ActiveConnectionCount"]
+        label.pop(1)                        # ["app", "ActiveConnectionCount"]
+
+        self.label = ":".join(label)
         self.timestamps = metric["Timestamps"]
         self.values = metric["Values"]
 
@@ -158,15 +163,16 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
         data_cluster1 = MetricData(metrics_cluster1[i])
         data_cluster2 = MetricData(metrics_cluster2[i])
         formatter = DateFormatter("%H:%M:%S")
+        label = data_cluster1.label
 
         fig, ax = plt.subplots()
         ax.xaxis.set_major_formatter(formatter)
         plt.xlabel("Timestamps")
         plt.plot(data_cluster1.timestamps, data_cluster1.values, label="Cluster 1")
         plt.plot(data_cluster2.timestamps, data_cluster2.values, label="Cluster 2")
-        plt.title(data_cluster1.label)
+        plt.title(label)
         plt.legend(loc='best')
-        plt.savefig(f"graphs/{data_cluster1.label}")
+        plt.savefig(f"graphs/{label}")
 
 # PROGRAM EXECUTION
 
@@ -191,5 +197,5 @@ print(response)
 (metrics_cluster1, metrics_cluster2) = parse_data(response)
 
 # 7. Generate graphs and save under /metrics folder
-#generate_graphs(metrics_cluster1, metrics_cluster2)
+generate_graphs(metrics_cluster1, metrics_cluster2)
 print('Done')
