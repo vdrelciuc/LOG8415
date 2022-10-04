@@ -17,28 +17,37 @@ tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
 
+def create_instances(ec2_resource, instanceType, count, imageId, keyName):
+    ec2_resource.create_instances(
+        InstanceType = instanceType,
+        MinCount = count,
+        MaxCount = count,
+        ImageId = imageId,
+        KeyName = keyName
+    )
+
+def getInstanceIds(ec2_client, instanceType):
+    instanceIds = []
+    m4instances = ec2_client.describe_instances()
+    for reservation in m4instances['Reservations']:
+        for instance in reservation['Instances']:
+            if reservation['InstanceType'] == instanceType:
+                print(instance['InstanceId'])
+                instanceIds += instance['InstanceId']
+    
+    return instanceIds
+
 def initialize_infra(ec2_client):
     # TODO: implement
 
     #create instances
     ec2_resource = boto3.resource('ec2')
-    
-    ec2_resource.create_instances(
-        InstanceType='m4.large',
-        MinCount=4,
-        MaxCount=4,
-        ImageId='ami-08c40ec9ead489470',
-        KeyName='vockey'
-        )
 
-    ec2_resource.create_instances(
-        InstanceType='t2.large',
-        MinCount=5,
-        MaxCount=5,
-        ImageId='ami-08c40ec9ead489470',
-        KeyName='vockey'
-        )
+    create_instances(ec2_resource, 'm4.large', 4, 'ami-08c40ec9ead489470', 'vockey')
 
+    m4InstanceIds = getInstanceIds(ec2_client, 'm4.large')
+
+    create_instances(ec2_resource, 't2.large', 5, 'ami-08c40ec9ead489470', 'vockey')
 
     """#create target groups
     elbv2_client = boto3.client('elbv2')
