@@ -23,6 +23,26 @@ def initialize_infra():
     #create instances
     ec2_client = boto3.client('ec2')
     
+    #creating security groups
+    response_vpcs = ec2_client.describe_vpcs()
+    vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
+    response_sg = ec2_client.create_security_group(GroupName='InstanceSecurity',
+        Description='Security group for our instances',
+        VpcId=vpc_id)
+    sg_id = response_sg['GroupId']
+    ec2_client.authorize_security_group_ingress(
+        GroupId=sg_id,
+        IpPermissions=[
+        {'IpProtocol': 'tcp',
+            'FromPort': 80,
+            'ToPort': 80,
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]},
+        {'IpProtocol': 'tcp',
+            'FromPort': 22,
+            'ToPort': 22,
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
+    ])
+    #recreating instances
     ec2_client.run_instances(
         InstanceType='m4.large',
         MinCount=1,
@@ -43,6 +63,38 @@ def initialize_infra():
     elbv2_client = boto3.client('elbv2')
     elbv2_client.create_target_group(name="m4-target-group")
     elbv2_client.create_target_group(name="t2-target-group")
+
+    # create load balancer
+    # elb_client = boto3.client('elb')
+    # elb_cluster1 = elb_client.create_load_balancer(
+    # LoadBalancerName='LoadBalancer',
+    # Listeners=[
+    #         {
+    #             'Protocol': 'HTTP',
+    #             'LoadBalancerPort': 80,
+    #             'InstanceProtocol': 'HTTP',
+    #             'InstancePort': 80,
+    #             'SSLCertificateId': 'string'
+    #         },
+    #     ],
+    #     AvailabilityZones=[
+    #         'us-east-1',
+    #     ],
+    #     Subnets=[
+    #         'string',
+    #     ],
+    #     SecurityGroups=[
+    #         'string',
+    #     ],
+    #     Scheme='string',
+    #     Tags=[
+    #         {
+    #             'Key': 'string',
+    #             'Value': 'string'
+    #         },
+    #     ]
+    # )
+
 
    
 
