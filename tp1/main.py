@@ -3,10 +3,10 @@ import boto3
 import requests
 import threading
 import time
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.dates import (DateFormatter)
-matplotlib.use('TkAgg')
+#import matplotlib
+#import matplotlib.pyplot as plt
+#from matplotlib.dates import (DateFormatter)
+#matplotlib.use('TkAgg')
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
@@ -17,11 +17,11 @@ tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
 
-def initialize_infra():
+def initialize_infra(ec2_client):
     # TODO: implement
 
     #create instances
-    ec2_client = boto3.client('ec2')
+    ec2_resource = boto3.resource('ec2')
     
     #creating security groups
     response_vpcs = ec2_client.describe_vpcs()
@@ -43,26 +43,27 @@ def initialize_infra():
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
     ])
     #recreating instances
-    ec2_client.run_instances(
+    ec2_resource.create_instances(
         InstanceType='m4.large',
-        MinCount=1,
-        MaxCount=2,
+        MinCount=4,
+        MaxCount=4,
         ImageId='ami-08c40ec9ead489470',
         KeyName='vockey'
         )
 
-    ec2_client.run_instances(
+    ec2_resource.create_instances(
         InstanceType='t2.large',
-        MinCount=1,
+        MinCount=5,
         MaxCount=5,
         ImageId='ami-08c40ec9ead489470',
         KeyName='vockey'
         )
 
-    #create target groups
+
+    """#create target groups
     elbv2_client = boto3.client('elbv2')
     elbv2_client.create_target_group(name="m4-target-group")
-    elbv2_client.create_target_group(name="t2-target-group")
+    elbv2_client.create_target_group(name="t2-target-group")"""
 
     # create load balancer
     # elb_client = boto3.client('elb')
@@ -196,13 +197,14 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
 # PROGRAM EXECUTION
 
 # 1. Initialize AWS clients
+ec2_client = boto3.client('ec2')
 elb_client = boto3.client('elbv2')
 cw_client = boto3.client('cloudwatch')
 
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
-initialize_infra()
+initialize_infra(ec2_client)
 
-# 3. Run workloads
+"""# 3. Run workloads
 run_workloads(elb_client)
 
 # 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
@@ -216,4 +218,4 @@ response = get_data(cw_client=cw_client, query=query)
 
 # 7. Generate graphs and save under /metrics folder
 generate_graphs(metrics_cluster1, metrics_cluster2)
-print('Done')
+print('Done')"""
