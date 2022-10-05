@@ -3,10 +3,11 @@ import boto3
 import requests
 import threading
 import time
-#import matplotlib
-#import matplotlib.pyplot as plt
-#from matplotlib.dates import (DateFormatter)
-#matplotlib.use('TkAgg')
+import matplotlib
+import matplotlib.pyplot as plt
+
+from matplotlib.dates import (DateFormatter)
+matplotlib.use('TkAgg')
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
@@ -269,7 +270,60 @@ def initialize_cloudwatch():
 def build_cloudwatch_query():
     # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
     # TODO: implement using template in doc
-    return {}
+    targetgroup_val_1, targetgroup_val_2 = "targetgroup/t2-target-group", "targetgroup/m4-target-group"
+    loadbal_val_1, loadbal_val_2 = "app/t2-app-load", "app/m4-app-load-balancer"
+    response_elb = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
+        {
+            'Name': 'LoadBalancer',
+        },
+    ])
+    response_tg = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
+        {
+            'Name': 'TargetGroup',
+        },
+    ])
+    dimension_tg_1 = dimension_tg_2 = dimension_lb_1 = dimension_lb_2 = None
+    for response in response_elb["Metrics"]:
+        dimension = response["Dimensions"][0]
+        if targetgroup_val_1 in dimension["Value"]:
+            dimension_tg_1 = dimension
+        elif targetgroup_val_2 in dimension["Value"]:
+            dimension_tg_2 = dimension
+
+    for response in response_tg["Metrics"]:
+        dimension = response["Dimensions"][1]
+        if loadbal_val_1 in dimension["Value"]:
+            dimension_lb_1 = dimension
+        elif loadbal_val_2 in dimension["Value"]:
+            dimension_lb_2 = dimension
+
+    metricDataQy = []
+    metric_pipeline = [(1, dimension_tg_1, TARGET_GROUP_CLOUDWATCH_METRICS), (2, dimension_tg_2, TARGET_GROUP_CLOUDWATCH_METRICS),
+        (1, dimension_lb_1, ELB_CLOUDWATCH_METRICS), (2, dimension_lb_2, ELB_CLOUDWATCH_METRICS)]
+    for metric_action in metric_pipeline:
+        appendMetricDataQy(metricDataQy, metric_action[0], metric_action[2], metric_action[1])
+    return metricDataQy
+
+def appendMetricDataQy(container, cluster_id, metrics, dimension):
+    for metric in metrics:
+        container.append({
+            "Id": (metric + dimension["Name"] + str(cluster_id)).lower(),
+            "MetricStat": {
+                "Metric": {
+                    "Namespace": "AWS/ApplicationELB",
+                    "MetricName": metric,
+                    "Dimensions": [
+                        {
+                            "Name": dimension["Name"],
+                            "Value": dimension["Value"]
+                        }
+                    ]
+                },
+                "Period": 60,
+                "Stat": "Average",
+            }
+        })
+
 
 def get_data(cw_client, query):
     return cw_client.get_metric_data(
@@ -282,10 +336,10 @@ def parse_data(response):
     global elb_metrics_count, tg_metrics_count
     results = response["MetricDataResults"]
 
-    elb_metrics_cluster1 = results[:elb_metrics_count]
-    elb_metrics_cluster2 = results[elb_metrics_count:elb_metrics_count * 2]
-    tg_metrics_cluster1 = results[elb_metrics_count * 2:elb_metrics_count * 2 + tg_metrics_count]
-    tg_metrics_cluster2 = results[elb_metrics_count * 2 + tg_metrics_count:]
+    tg_metrics_cluster1 = results[:tg_metrics_count]
+    tg_metrics_cluster2 = results[tg_metrics_count:tg_metrics_count * 2]
+    elb_metrics_cluster1 = results[tg_metrics_count * 2:tg_metrics_count * 2 + elb_metrics_count]
+    elb_metrics_cluster2 = results[tg_metrics_count * 2 + elb_metrics_count:]
 
     cluster1_data = elb_metrics_cluster1 + tg_metrics_cluster1
     cluster2_data = elb_metrics_cluster2 + tg_metrics_cluster2
@@ -294,7 +348,12 @@ def parse_data(response):
 
 class MetricData:
     def __init__(self, metric):
-        self.label = metric["Label"]
+        # "app/t2-app-load-balancer/4db0b61e07b90a45 ActiveConnectionCount"
+        label = metric["Label"].split("/")  # ["app", "t2-app-load-balancer", "4db0b61e07b90a45 ActiveConnectionCount"]
+        label[2] = label[2].split()[1]      # ["app", "t2-app-load-balancer", "ActiveConnectionCount"]
+        label.pop(1)                        # ["app", "ActiveConnectionCount"]
+
+        self.label = ":".join(label)
         self.timestamps = metric["Timestamps"]
         self.values = metric["Values"]
 
@@ -304,15 +363,16 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
         data_cluster1 = MetricData(metrics_cluster1[i])
         data_cluster2 = MetricData(metrics_cluster2[i])
         formatter = DateFormatter("%H:%M:%S")
+        label = data_cluster1.label
 
         fig, ax = plt.subplots()
         ax.xaxis.set_major_formatter(formatter)
         plt.xlabel("Timestamps")
         plt.plot(data_cluster1.timestamps, data_cluster1.values, label="Cluster 1")
         plt.plot(data_cluster2.timestamps, data_cluster2.values, label="Cluster 2")
-        plt.title(data_cluster1.label)
+        plt.title(label)
         plt.legend(loc='best')
-        plt.savefig(f"graphs/{data_cluster1.label}")
+        plt.savefig(f"graphs/{label}")
 
 def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
     print("Deleting instances...")
@@ -391,6 +451,7 @@ query = build_cloudwatch_query()
 
 # 5. Query CloudWatch client using built query
 response = get_data(cw_client=cw_client, query=query)
+print(response)
 
 # 6. Parse MetricDataResults and store metrics
 (metrics_cluster1, metrics_cluster2) = parse_data(response)
