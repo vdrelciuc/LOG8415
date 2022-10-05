@@ -7,7 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from matplotlib.dates import (DateFormatter)
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
@@ -25,13 +25,13 @@ def create_instances(ec2_resource, instanceType, count, imageId, keyName):
         MaxCount = count,
         ImageId = imageId,
         KeyName = keyName,
-        SecurityGroups = ['custom-sec-group-13']
+        SecurityGroups = ['custom-sec-group-14']
     )
 
 def create_security_group(ec2_resource):
     response_vpcs = ec2_client.describe_vpcs()
     vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-13',
+    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-14',
         Description='Security group for our instances',
         VpcId=vpc_id)
     sg_id = response_sg['GroupId']
