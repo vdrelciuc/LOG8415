@@ -24,13 +24,13 @@ def create_instances(ec2_resource, instanceType, count, imageId, keyName):
         MaxCount = count,
         ImageId = imageId,
         KeyName = keyName,
-        SecurityGroups = ['custom-sec-group-11']
+        SecurityGroups = ['custom-sec-group-13']
     )
 
 def create_security_group(ec2_resource):
     response_vpcs = ec2_client.describe_vpcs()
     vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-11',
+    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-13',
         Description='Security group for our instances',
         VpcId=vpc_id)
     sg_id = response_sg['GroupId']
@@ -161,7 +161,6 @@ def create_load_balancer(client, name, sg, ec2_client):
     sn_all = ec2_client.describe_subnets()
     for sn in sn_all['Subnets'] :
         subnets.append(sn['SubnetId'])
-    print(subnets)
         
     return client.create_load_balancer(
         Name=name,
@@ -351,8 +350,8 @@ cw_client = boto3.client('cloudwatch')
 
 
 sg = create_security_group(ec2_resource)
-m4Instances = create_instances(ec2_resource, 'm4.large', 4, 'ami-08c40ec9ead489470', 'vockey')
-t2Instances = create_instances(ec2_resource, 't2.large', 5, 'ami-08c40ec9ead489470', 'vockey')
+m4Instances = create_instances(ec2_resource, 'm4.large', 1, 'ami-08c40ec9ead489470', 'vockey')
+t2Instances = create_instances(ec2_resource, 't2.large', 1, 'ami-08c40ec9ead489470', 'vockey')
 
 cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', sg, ec2_client)
 cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', sg, ec2_client)
@@ -372,7 +371,11 @@ for ins in t2Instances:
         "Id": ins.id
     })
 
-time.sleep(30)
+for instance in m4Instances:
+    instance.wait_until_running()
+
+for instance in t2Instances:
+    instance.wait_until_running()
 register_targets(elb_client, cluster1_tg, m4targets)
 register_targets(elb_client, cluster2_tg, t2targets)
 
