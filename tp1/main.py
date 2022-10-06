@@ -5,6 +5,8 @@ import threading
 import time
 import matplotlib
 import matplotlib.pyplot as plt
+from dotenv import load_dotenv
+load_dotenv()
 
 from matplotlib.dates import (DateFormatter)
 #matplotlib.use('TkAgg')
@@ -53,7 +55,7 @@ def initialize_infra(ec2_resource):
     # TODO: implement
 
     #create instances
-    
+
     create_security_group(ec2_resource)
     m4Instances = create_instances(ec2_resource, 'm4.large', 4, 'ami-08c40ec9ead489470', 'vockey')
 
@@ -153,7 +155,7 @@ def initialize_infra(ec2_resource):
     )
 
 
-   
+
 
     return {}
 
@@ -162,13 +164,13 @@ def create_load_balancer(client, name, sg, ec2_client):
     sn_all = ec2_client.describe_subnets()
     for sn in sn_all['Subnets'] :
         subnets.append(sn['SubnetId'])
-        
+
     return client.create_load_balancer(
         Name=name,
         SecurityGroups=[
             sg.id
         ],
-        IpAddressType='ipv4', 
+        IpAddressType='ipv4',
         Subnets= subnets
     )
 
@@ -392,7 +394,7 @@ def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
     for instance in m4Ins:
         instance.stop()
         instance.terminate()
-    
+
 
     for instance in t2Ins:
         instance.stop()
