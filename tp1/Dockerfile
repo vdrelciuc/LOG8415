@@ -3,9 +3,6 @@ FROM python:3
 RUN mkdir -p metrics/
 RUN mkdir -p graphs
 
-RUN apt-get update && apt-get install -y \
-    tk
-
 RUN pip install boto3 requests matplotlib python-dotenv
 
 COPY main.py /

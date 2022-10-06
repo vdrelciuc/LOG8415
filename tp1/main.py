@@ -4,7 +4,7 @@ import requests
 import threading
 import time
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 load_dotenv()
