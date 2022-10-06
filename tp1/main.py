@@ -21,19 +21,21 @@ tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 # DEFINE FUNCTIONS HERE
 
 def create_instances(ec2_resource, instanceType, count, imageId, keyName):
+    user_data = open('flask_startup.sh', 'r')
     return ec2_resource.create_instances(
         InstanceType = instanceType,
         MinCount = count,
         MaxCount = count,
         ImageId = imageId,
         KeyName = keyName,
-        SecurityGroups = ['custom-sec-group-17']
+        UserData = user_data.read(),
+        SecurityGroups = ['custom-sec-group-35']
     )
 
 def create_security_group(ec2_resource):
     response_vpcs = ec2_client.describe_vpcs()
     vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-17',
+    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-35',
         Description='Security group for our instances',
         VpcId=vpc_id)
     sg_id = response_sg['GroupId']
@@ -50,114 +52,6 @@ def create_security_group(ec2_resource):
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
     ])
     return ec2_resource.SecurityGroup(response_sg['GroupId'])
-
-def initialize_infra(ec2_resource):
-    # TODO: implement
-
-    #create instances
-    
-    create_security_group(ec2_resource)
-    m4Instances = create_instances(ec2_resource, 'm4.large', 4, 'ami-08c40ec9ead489470', 'vockey')
-
-    #m4InstanceIds = getInstanceIds(ec2_client, 'm4.large')
-
-    t2Instances = create_instances(ec2_resource, 't2.large', 5, 'ami-08c40ec9ead489470', 'vockey')
-
-    """#create target groups
-    elbv2_client = boto3.client('elbv2')
-    elbv2_client.create_target_group(name="m4-target-group")
-    elbv2_client.create_target_group(name="t2-target-group")"""
-
-    # create load balancer
-    elb_client = boto3.client('elbv2')
-    elb_cluster1 = elb_client.create_load_balancer(
-        Name='elb_cluster1',
-        SecurityGroups=[
-            'InstanceSecurity'
-        ],
-        IpAddressType='ipv4'|'dualstack',
-    )
-    elb_cluster2 = elb_client.create_load_balancer(
-        Name='elb_cluster2',
-        SecurityGroups=[
-            'InstanceSecurity'
-        ],
-        IpAddressType='ipv4'|'dualstack'
-    )
-    cluster1_tg = elb_client.create_target_group(
-        Name='cluster1-tg',
-        Protocol='HTTP',
-        Port=80
-    )
-    cluster2_tg = elb_client.create_target_group(
-        Name='cluster2-tg',
-        Protocol='HTTP',
-        Port=80
-    )
-    elb_client.register_targets(
-        TargetGroupArn=cluster1_tg['TargetGroups'][0]['TargetGroupArn'],
-        Targets=[
-            {
-                'Id': '1'
-            },
-            {
-                'Id': '1'
-            },
-            {
-                'Id': '1'
-            },
-            {
-                'Id': '1'
-            }
-        ]
-    )
-    elb_client.register_targets(
-        TargetGroupArn=cluster2_tg['TargetGroups'][0]['TargetGroupArn'],
-        Targets=[
-            {
-                'Id': '1'
-            },
-            {
-                'Id': '1'
-            },
-            {
-                'Id': '1'
-            },
-            {
-                'Id': '1'
-            },
-            {
-                'Id': '1'
-            }
-        ]
-    )
-    elb_client.create_listener(
-        DefaultActions=[
-            {
-                'TargetGroupArn': cluster1_tg['TargetGroups'][0]['TargetGroupArn'],
-                'Type': 'forward',
-            },
-        ],
-        LoadBalancerArn=elb_cluster1['LoadBalancers'][0]['LoadBalancerArn'],
-        Port=80,
-        Protocol='HTTP',
-    )
-    elb_client.create_listener(
-        DefaultActions=[
-            {
-                'TargetGroupArn': cluster2_tg['TargetGroups'][0]['TargetGroupArn'],
-                'Type': 'forward',
-            },
-        ],
-        LoadBalancerArn=elb_cluster2['LoadBalancers'][0]['LoadBalancerArn'],
-        Port=80,
-        Protocol='HTTP',
-    )
-
-
-   
-
-    return {}
 
 def create_load_balancer(client, name, sg, ec2_client):
     subnets = []
@@ -228,7 +122,9 @@ def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
     url = 'http://' + cluster
     request = requests.get(url, headers=headers)
-    # print(request.text) # uncomment to see individual instance_id
+    print(request.status_code)
+    print(request.text) # uncomment to see individual instance_id
+    return request
 
 def run_first_workload(t2_cluster, m4_cluster):
     # 1000 GET requests sequentially
@@ -252,10 +148,15 @@ def run_second_workload(t2_cluster, m4_cluster):
         call_endpoint_http(m4_cluster)
     print('Finishing second workload...')
 
-def run_workloads(elb_client):
-    response = elb_client.describe_load_balancers()
-    t2_cluster = response['LoadBalancers'][0]['DNSName'] # TODO: update hardcoded cluster
-    m4_cluster = response['LoadBalancers'][1]['DNSName'] # TODO: update hardcoded cluster
+def run_workloads(cluster1_elb, cluster2_elb):
+    m4_cluster = cluster1_elb['LoadBalancers'][0]['DNSName']
+    t2_cluster = cluster2_elb['LoadBalancers'][0]['DNSName']
+
+    t2_code, m4_code = 0, 0
+    while (t2_code != 200) and (m4_code != 200):
+        t2_code = call_endpoint_http(t2_cluster).status_code
+        m4_code = call_endpoint_http(m4_cluster).status_code
+        time.sleep(2)
 
     first_workload_thread = threading.Thread(target=run_first_workload, args=(t2_cluster,m4_cluster))
     second_workload_thread = threading.Thread(target=run_second_workload, args=(t2_cluster,m4_cluster))
@@ -399,10 +300,44 @@ def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
     print("Deleting security group...")
     sg.delete()
 
+def initialize_infra(ec2_client, ec2_resource, elb_client):
+    sg = create_security_group(ec2_resource)
+    m4Instances = create_instances(ec2_resource, 'm4.large', 1, 'ami-08c40ec9ead489470', 'vockey')
+    t2Instances = create_instances(ec2_resource, 't2.large', 1, 'ami-08c40ec9ead489470', 'vockey')
+
+    cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', sg, ec2_client)
+    cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', sg, ec2_client)
+
+    cluster1_tg = create_target_group(elb_client, 'cluster1-tg', ec2_client)
+    cluster2_tg = create_target_group(elb_client, 'cluster2-tg', ec2_client)
+
+    m4targets = []
+    for ins in m4Instances:
+        m4targets.append({
+            "Id": ins.id
+        })
+
+    t2targets = []
+    for ins in t2Instances:
+        t2targets.append({
+            "Id": ins.id
+        })
+
+    for instance in m4Instances:
+        instance.wait_until_running()
+
+    for instance in t2Instances:
+        instance.wait_until_running()
+
+    register_targets(elb_client, cluster1_tg, m4targets)
+    register_targets(elb_client, cluster2_tg, t2targets)
+
+    listener_cluster1 = create_listener(elb_client, cluster1_tg, cluster1_elb)
+    listener_cluster2 = create_listener(elb_client, cluster2_tg, cluster2_elb)
+
+    return cluster1_elb, cluster2_elb
 
 # PROGRAM EXECUTION
-
-'''
 
 # 1. Initialize AWS clients
 ec2_client = boto3.client('ec2')
@@ -411,65 +346,15 @@ elb_client = boto3.client('elbv2')
 cw_client = boto3.client('cloudwatch')
 
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
+cluster1_elb, cluster2_elb = initialize_infra(ec2_client=ec2_client, ec2_resource=ec2_resource, elb_client=elb_client)
+time.sleep(60)
+
+# 3. Run workloads
+run_workloads(cluster1_elb, cluster2_elb)
 
 
-sg = create_security_group(ec2_resource)
-m4Instances = create_instances(ec2_resource, 'm4.large', 2, 'ami-08c40ec9ead489470', 'vockey')
-t2Instances = create_instances(ec2_resource, 't2.large', 2, 'ami-08c40ec9ead489470', 'vockey')
-
-cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', sg, ec2_client)
-cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', sg, ec2_client)
-
-cluster1_tg = create_target_group(elb_client, 'cluster1-tg', ec2_client)
-cluster2_tg = create_target_group(elb_client, 'cluster2-tg', ec2_client)
-
-m4targets = []
-for ins in m4Instances:
-    m4targets.append({
-        "Id": ins.id
-    })
-
-t2targets = []
-for ins in t2Instances:
-    t2targets.append({
-        "Id": ins.id
-    })
-
-for instance in m4Instances:
-    instance.wait_until_running()
-
-for instance in t2Instances:
-    instance.wait_until_running()
-register_targets(elb_client, cluster1_tg, m4targets)
-register_targets(elb_client, cluster2_tg, t2targets)
-
-listener_cluster1 = create_listener(elb_client, cluster1_tg, cluster1_elb)
-listener_cluster2 = create_listener(elb_client, cluster2_tg, cluster2_elb)
-
-'''
-def setup_flask():
-    print("Installing flask...")
-    subprocess.Popen("ssh -o StrictHostKeychecking=no -i labsuser.pem ubuntu@ec2-44-203-159-82.compute-1.amazonaws.com < flask_setup.sh", shell=True).wait()
-    print("Done installing flask")
-
-def startup_flask():
-    print("Starting Flask...")
-    subprocess.Popen("ssh -o StrictHostKeychecking=no -i labsuser.pem ubuntu@ec2-44-203-159-82.compute-1.amazonaws.com < flask_startup.sh", shell=True).wait()
-    
-def start_flask():
-    t1 = multiprocessing.Process(target=startup_flask)
-    t1.start()
-    time.sleep(5)
-    t1.terminate()
-    print("Flask is started")
-
-setup_flask()
-start_flask()
-
-
+"""
 #cleanUp(elb_client, sg, m4Instances, t2Instances, [listener_cluster1, listener_cluster2], [cluster1_tg, cluster2_tg], [cluster1_elb, cluster2_elb])
-"""# 3. Run workloads
-run_workloads(elb_client)
 
 # 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 query = build_cloudwatch_query()
