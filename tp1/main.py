@@ -4,12 +4,12 @@ import requests
 import threading
 import time
 import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 load_dotenv()
 
 from matplotlib.dates import (DateFormatter)
-#matplotlib.use('TkAgg')
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
@@ -453,7 +453,6 @@ run_workloads(elb_client)
 
 # 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 query = build_cloudwatch_query()
-"""
 # 5. Query CloudWatch client using built query
 response = get_data(cw_client=cw_client, query=query)
 print(response)
@@ -463,4 +462,4 @@ print(response)
 
 # 7. Generate graphs and save under /metrics folder
 generate_graphs(metrics_cluster1, metrics_cluster2)
-print('Done')"""
+print('Done')
