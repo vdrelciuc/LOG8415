@@ -5,6 +5,8 @@ import threading
 import time
 import matplotlib
 import matplotlib.pyplot as plt
+import subprocess
+import multiprocessing
 
 from matplotlib.dates import (DateFormatter)
 #matplotlib.use('TkAgg')
@@ -25,13 +27,13 @@ def create_instances(ec2_resource, instanceType, count, imageId, keyName):
         MaxCount = count,
         ImageId = imageId,
         KeyName = keyName,
-        SecurityGroups = ['custom-sec-group-14']
+        SecurityGroups = ['custom-sec-group-17']
     )
 
 def create_security_group(ec2_resource):
     response_vpcs = ec2_client.describe_vpcs()
     vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-14',
+    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-17',
         Description='Security group for our instances',
         VpcId=vpc_id)
     sg_id = response_sg['GroupId']
@@ -400,6 +402,8 @@ def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
 
 # PROGRAM EXECUTION
 
+'''
+
 # 1. Initialize AWS clients
 ec2_client = boto3.client('ec2')
 ec2_resource = boto3.resource('ec2')
@@ -410,8 +414,8 @@ cw_client = boto3.client('cloudwatch')
 
 
 sg = create_security_group(ec2_resource)
-m4Instances = create_instances(ec2_resource, 'm4.large', 1, 'ami-08c40ec9ead489470', 'vockey')
-t2Instances = create_instances(ec2_resource, 't2.large', 1, 'ami-08c40ec9ead489470', 'vockey')
+m4Instances = create_instances(ec2_resource, 'm4.large', 2, 'ami-08c40ec9ead489470', 'vockey')
+t2Instances = create_instances(ec2_resource, 't2.large', 2, 'ami-08c40ec9ead489470', 'vockey')
 
 cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', sg, ec2_client)
 cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', sg, ec2_client)
@@ -441,6 +445,27 @@ register_targets(elb_client, cluster2_tg, t2targets)
 
 listener_cluster1 = create_listener(elb_client, cluster1_tg, cluster1_elb)
 listener_cluster2 = create_listener(elb_client, cluster2_tg, cluster2_elb)
+
+'''
+def setup_flask():
+    print("Installing flask...")
+    subprocess.Popen("ssh -o StrictHostKeychecking=no -i labsuser.pem ubuntu@ec2-44-203-159-82.compute-1.amazonaws.com < flask_setup.sh", shell=True).wait()
+    print("Done installing flask")
+
+def startup_flask():
+    print("Starting Flask...")
+    subprocess.Popen("ssh -o StrictHostKeychecking=no -i labsuser.pem ubuntu@ec2-44-203-159-82.compute-1.amazonaws.com < flask_startup.sh", shell=True).wait()
+    
+def start_flask():
+    t1 = multiprocessing.Process(target=startup_flask)
+    t1.start()
+    time.sleep(5)
+    t1.terminate()
+    print("Flask is started")
+
+setup_flask()
+start_flask()
+
 
 #cleanUp(elb_client, sg, m4Instances, t2Instances, [listener_cluster1, listener_cluster2], [cluster1_tg, cluster2_tg], [cluster1_elb, cluster2_elb])
 """# 3. Run workloads
