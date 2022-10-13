@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import boto3
 import requests
 import threading
@@ -8,12 +8,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import subprocess
 import multiprocessing
+import json
 
 from matplotlib.dates import (DateFormatter)
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
-TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
-ELB_CLOUDWATCH_METRICS = ['ActiveConnectionCount', 'ConsumedLCUs', 'RequestCount', 'HTTPCode_ELB_5XX_Count', 'HTTPCode_ELB_503_Count', 'HTTPCode_Target_2XX_Count', 'NewConnectionCount', 'ProcessedBytes', 'TargetResponseTime']
+TARGET_GROUP_CLOUDWATCH_METRICS = ['RequestCountPerTarget']
+ELB_CLOUDWATCH_METRICS = ['NewConnectionCount', 'ProcessedBytes', 'TargetResponseTime']
 
 elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
 tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
@@ -29,13 +30,13 @@ def create_instances(ec2_resource, instanceType, count, imageId, keyName):
         ImageId = imageId,
         KeyName = keyName,
         UserData = user_data.read(),
-        SecurityGroups = ['custom-sec-group-35']
+        SecurityGroups = ['custom-sec-group']
     )
 
 def create_security_group(ec2_resource):
     response_vpcs = ec2_client.describe_vpcs()
     vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group-35',
+    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group',
         Description='Security group for our instances',
         VpcId=vpc_id)
     sg_id = response_sg['GroupId']
@@ -97,46 +98,23 @@ def create_listener(client, targetGroup, loadBalancer):
         Protocol='HTTP',
     )
 
-def delete_listener(client, listener):
-    client.delete_listener(
-        ListenerArn=listener['Listeners'][0]['ListenerArn']
-    )
-
-def deregister_targets(client, targetGroup, targets):
-    client.deregister_targets(
-        TargetGroupArn=targetGroup['TargetGroups'][0]['TargetGroupArn'],
-        Targets=targets
-    )
-
-def delete_target_group(client, targetGroup):
-        client.delete_target_group(
-        TargetGroupArn=targetGroup['TargetGroups'][0]['TargetGroupArn']
-    )
-
-def delete_load_balancer(client, loadBalancer):
-    client.delete_load_balancer(
-    LoadBalancerArn=loadBalancer['LoadBalancers'][0]['LoadBalancerArn']
-)
-
 def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
     url = 'http://' + cluster
     request = requests.get(url, headers=headers, verify=False)
-    # print(request.status_code)
-    # print(request.text) # uncomment to see individual instance_id
     return request
 
 def run_first_workload(t2_cluster, m4_cluster):
     # 1000 GET requests sequentially
-    print('Starting first workload...')
+    print('Started first workload.')
     for _ in range(1000):
         call_endpoint_http(t2_cluster)
         call_endpoint_http(m4_cluster)
-    print('Finishing first workload...')
+    print('Finished first workload.')
 
 def run_second_workload(t2_cluster, m4_cluster):
     # 500 GET requests, then one minute sleep, followed by 1000 GET requests
-    print('Starting second workload...')
+    print('Started second workload.')
     for _ in range(500):
         call_endpoint_http(t2_cluster)
         call_endpoint_http(m4_cluster)
@@ -146,7 +124,7 @@ def run_second_workload(t2_cluster, m4_cluster):
     for _ in range(1000):
         call_endpoint_http(t2_cluster)
         call_endpoint_http(m4_cluster)
-    print('Finishing second workload...')
+    print('Finished second workload.')
 
 def run_workloads(cluster1_elb, cluster2_elb):
     m4_cluster = cluster1_elb['LoadBalancers'][0]['DNSName']
@@ -188,14 +166,12 @@ def build_cloudwatch_query():
     
     for response in response_elb["Metrics"]:
         dimension = response["Dimensions"][0]
-        print('premiere boucle', response["Dimensions"])
         if targetgroup_val_1 in dimension["Value"]:
             dimension_tg_1 = dimension
         elif targetgroup_val_2 in dimension["Value"]:
             dimension_tg_2 = dimension
 
     for response in response_tg["Metrics"]:
-        print('deuxieme boucle', response["Dimensions"])
         dimension = response["Dimensions"][1]
         if loadbal_val_1 in dimension["Value"]:
             dimension_lb_1 = dimension
@@ -233,6 +209,7 @@ def appendMetricDataQy(container, cluster_id, metrics, dimension):
 
 
 def get_data(cw_client, query):
+    print('Started querying CloudWatch.')
     return cw_client.get_metric_data(
         MetricDataQueries=query,
         StartTime=datetime.utcnow() - timedelta(minutes=30), # metrics from the last 30 mins (estimated max workload time)
@@ -266,6 +243,7 @@ class MetricData:
 
 
 def generate_graphs(metrics_cluster1, metrics_cluster2):
+    print('Generating graphs under graphs/.')
     for i in range(len(metrics_cluster1)):
         data_cluster1 = MetricData(metrics_cluster1[i])
         data_cluster2 = MetricData(metrics_cluster2[i])
@@ -281,30 +259,8 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
         plt.legend(loc='best')
         plt.savefig(f"graphs/{label}")
 
-def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
-    print("Deleting instances...")
-    for listener in listeners:
-        delete_listener(client, listener)
-    m4Ids = [ins.id for ins in m4Ins]
-    t2Ids = [ins.id for ins in t2Ins]
-    deregister_targets(client, targetGroups[0], m4Ids)
-    deregister_targets(client, targetGroups[1], t2Ids)
-    for targetGroup in targetGroups:
-        delete_target_group(client, targetGroup)
-    for loadBalancer in loadBalancers:
-        delete_load_balancer(client, loadBalancer)
-    for instance in m4Ins:
-        instance.stop()
-        instance.terminate()
-
-
-    for instance in t2Ins:
-        instance.stop()
-        instance.terminate()
-    print("Deleting security group...")
-    sg.delete()
-
 def initialize_infra(ec2_client, ec2_resource, elb_client):
+    print('Started initializing infrastructure.')
     sg = create_security_group(ec2_resource)
     m4Instances = create_instances(ec2_resource, 'm4.large', 5, 'ami-08c40ec9ead489470', 'vockey')
     t2Instances = create_instances(ec2_resource, 't2.large', 4, 'ami-08c40ec9ead489470', 'vockey')
@@ -339,7 +295,21 @@ def initialize_infra(ec2_client, ec2_resource, elb_client):
     listener_cluster1 = create_listener(elb_client, cluster1_tg, cluster1_elb)
     listener_cluster2 = create_listener(elb_client, cluster2_tg, cluster2_elb)
 
+    print('Finished initializing infrastructure.')
+
     return cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError ("Type %s not serializable" % type(obj))
+
+def print_response(response):
+    print('Saving query result in graphs/response.json.')
+    with open("graphs/response.json", "w") as data_file:
+        json.dump(response, data_file, indent=4, sort_keys=True, default=json_serial)
 
 # PROGRAM EXECUTION
 
@@ -351,7 +321,7 @@ cw_client = boto3.client('cloudwatch')
 
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
 cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(ec2_client=ec2_client, ec2_resource=ec2_resource, elb_client=elb_client)
-time.sleep(60)
+time.sleep(90)
 
 # 3. Run workloads
 run_workloads(cluster1_elb, cluster2_elb)
@@ -361,15 +331,14 @@ query = build_cloudwatch_query()
 
 # 5. Query CloudWatch client using built query
 response = get_data(cw_client=cw_client, query=query)
-print(response)
 
-# 6. Parse MetricDataResults and store metrics
+# 6. Save output to response.json
+print_response(response)
+
+# 7. Parse MetricDataResults and store metrics
 (metrics_cluster1, metrics_cluster2) = parse_data(response)
 
-# 7. Generate graphs and save under /metrics folder
+# 8. Generate graphs and save under /metrics folder
 generate_graphs(metrics_cluster1, metrics_cluster2)
-
-# 8. Cleanup infra
-# cleanUp(elb_client, sg, m4Instances, t2Instances, [listener_cluster1, listener_cluster2], [cluster1_tg, cluster2_tg], [cluster1_elb, cluster2_elb])
 
 print('Done.')
