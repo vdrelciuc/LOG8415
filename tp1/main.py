@@ -4,12 +4,12 @@ import requests
 import threading
 import time
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import subprocess
 import multiprocessing
 
 from matplotlib.dates import (DateFormatter)
-#matplotlib.use('TkAgg')
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['HealthyHostCount', 'HTTPCode_Target_4XX_Count','HTTPCode_Target_2XX_Count', 'RequestCount', 'RequestCountPerTarget', 'TargetResponseTime','UnHealthyHostCount']
@@ -58,13 +58,13 @@ def create_load_balancer(client, name, sg, ec2_client):
     sn_all = ec2_client.describe_subnets()
     for sn in sn_all['Subnets'] :
         subnets.append(sn['SubnetId'])
-        
+
     return client.create_load_balancer(
         Name=name,
         SecurityGroups=[
             sg.id
         ],
-        IpAddressType='ipv4', 
+        IpAddressType='ipv4',
         Subnets= subnets
     )
 
@@ -121,7 +121,7 @@ def delete_load_balancer(client, loadBalancer):
 def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
     url = 'http://' + cluster
-    request = requests.get(url, headers=headers)
+    request = requests.get(url, headers=headers, verify=False)
     print(request.status_code)
     print(request.text) # uncomment to see individual instance_id
     return request
@@ -173,8 +173,8 @@ def initialize_cloudwatch():
 def build_cloudwatch_query():
     # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
     # TODO: implement using template in doc
-    targetgroup_val_1, targetgroup_val_2 = "targetgroup/t2-target-group", "targetgroup/m4-target-group"
-    loadbal_val_1, loadbal_val_2 = "app/t2-app-load", "app/m4-app-load-balancer"
+    targetgroup_val_1, targetgroup_val_2 = "targetgroup/cluster1-tg", "targetgroup/cluster2-tg"
+    loadbal_val_1, loadbal_val_2 = "app/cluster1-elb", "app/cluster2-elb"
     response_elb = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
         {
             'Name': 'LoadBalancer',
@@ -188,12 +188,14 @@ def build_cloudwatch_query():
     dimension_tg_1 = dimension_tg_2 = dimension_lb_1 = dimension_lb_2 = None
     for response in response_elb["Metrics"]:
         dimension = response["Dimensions"][0]
+        print('premiere boucle', response["Dimensions"])
         if targetgroup_val_1 in dimension["Value"]:
             dimension_tg_1 = dimension
         elif targetgroup_val_2 in dimension["Value"]:
             dimension_tg_2 = dimension
 
     for response in response_tg["Metrics"]:
+        print('deuxieme boucle', response["Dimensions"])
         dimension = response["Dimensions"][1]
         if loadbal_val_1 in dimension["Value"]:
             dimension_lb_1 = dimension
@@ -292,7 +294,7 @@ def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
     for instance in m4Ins:
         instance.stop()
         instance.terminate()
-    
+
 
     for instance in t2Ins:
         instance.stop()
@@ -339,7 +341,7 @@ def initialize_infra(ec2_client, ec2_resource, elb_client):
 
 # PROGRAM EXECUTION
 
-# 1. Initialize AWS clients
+# # 1. Initialize AWS clients
 ec2_client = boto3.client('ec2')
 ec2_resource = boto3.resource('ec2')
 elb_client = boto3.client('elbv2')
@@ -355,10 +357,11 @@ run_workloads(cluster1_elb, cluster2_elb)
 
 """
 #cleanUp(elb_client, sg, m4Instances, t2Instances, [listener_cluster1, listener_cluster2], [cluster1_tg, cluster2_tg], [cluster1_elb, cluster2_elb])
+# 3. Run workloads
+run_workloads(elb_client)
 
 # 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 query = build_cloudwatch_query()
-
 # 5. Query CloudWatch client using built query
 response = get_data(cw_client=cw_client, query=query)
 print(response)

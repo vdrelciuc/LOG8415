@@ -2,9 +2,13 @@ FROM python:3
 
 RUN mkdir -p metrics/
 
-RUN pip install boto3 requests matplotlib
+RUN mkdir -p graphs/
+
+RUN pip install boto3 requests matplotlib python-dotenv
 
 COPY main.py /
+
+COPY .env /
 
 COPY flask_startup.sh /
 
