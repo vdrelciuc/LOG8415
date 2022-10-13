@@ -122,14 +122,14 @@ def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
     url = 'http://' + cluster
     request = requests.get(url, headers=headers, verify=False)
-    print(request.status_code)
-    print(request.text) # uncomment to see individual instance_id
+    # print(request.status_code)
+    # print(request.text) # uncomment to see individual instance_id
     return request
 
 def run_first_workload(t2_cluster, m4_cluster):
     # 1000 GET requests sequentially
     print('Starting first workload...')
-    for _ in range(10): # TODO: update with real values
+    for _ in range(1000):
         call_endpoint_http(t2_cluster)
         call_endpoint_http(m4_cluster)
     print('Finishing first workload...')
@@ -137,13 +137,13 @@ def run_first_workload(t2_cluster, m4_cluster):
 def run_second_workload(t2_cluster, m4_cluster):
     # 500 GET requests, then one minute sleep, followed by 1000 GET requests
     print('Starting second workload...')
-    for _ in range(5): # TODO: update with real values
+    for _ in range(500):
         call_endpoint_http(t2_cluster)
         call_endpoint_http(m4_cluster)
 
-    time.sleep(6) # TODO: update with real values
+    time.sleep(60)
 
-    for _ in range(10): # TODO: update with real values
+    for _ in range(1000):
         call_endpoint_http(t2_cluster)
         call_endpoint_http(m4_cluster)
     print('Finishing second workload...')
@@ -172,7 +172,6 @@ def initialize_cloudwatch():
 
 def build_cloudwatch_query():
     # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
-    # TODO: implement using template in doc
     targetgroup_val_1, targetgroup_val_2 = "targetgroup/cluster1-tg", "targetgroup/cluster2-tg"
     loadbal_val_1, loadbal_val_2 = "app/cluster1-elb", "app/cluster2-elb"
     response_elb = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
@@ -186,6 +185,7 @@ def build_cloudwatch_query():
         },
     ])
     dimension_tg_1 = dimension_tg_2 = dimension_lb_1 = dimension_lb_2 = None
+    
     for response in response_elb["Metrics"]:
         dimension = response["Dimensions"][0]
         print('premiere boucle', response["Dimensions"])
@@ -205,8 +205,10 @@ def build_cloudwatch_query():
     metricDataQy = []
     metric_pipeline = [(1, dimension_tg_1, TARGET_GROUP_CLOUDWATCH_METRICS), (2, dimension_tg_2, TARGET_GROUP_CLOUDWATCH_METRICS),
         (1, dimension_lb_1, ELB_CLOUDWATCH_METRICS), (2, dimension_lb_2, ELB_CLOUDWATCH_METRICS)]
+    
     for metric_action in metric_pipeline:
         appendMetricDataQy(metricDataQy, metric_action[0], metric_action[2], metric_action[1])
+
     return metricDataQy
 
 def appendMetricDataQy(container, cluster_id, metrics, dimension):
@@ -285,8 +287,8 @@ def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
         delete_listener(client, listener)
     m4Ids = [ins.id for ins in m4Ins]
     t2Ids = [ins.id for ins in t2Ins]
-    deregister_targets(client, targetGroup[0], m4Ids)
-    deregister_targets(client, targetGroup[1], t2Ids)
+    deregister_targets(client, targetGroups[0], m4Ids)
+    deregister_targets(client, targetGroups[1], t2Ids)
     for targetGroup in targetGroups:
         delete_target_group(client, targetGroup)
     for loadBalancer in loadBalancers:
@@ -304,8 +306,8 @@ def cleanUp(client, sg, m4Ins, t2Ins, listeners, targetGroups, loadBalancers):
 
 def initialize_infra(ec2_client, ec2_resource, elb_client):
     sg = create_security_group(ec2_resource)
-    m4Instances = create_instances(ec2_resource, 'm4.large', 1, 'ami-08c40ec9ead489470', 'vockey')
-    t2Instances = create_instances(ec2_resource, 't2.large', 1, 'ami-08c40ec9ead489470', 'vockey')
+    m4Instances = create_instances(ec2_resource, 'm4.large', 5, 'ami-08c40ec9ead489470', 'vockey')
+    t2Instances = create_instances(ec2_resource, 't2.large', 4, 'ami-08c40ec9ead489470', 'vockey')
 
     cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', sg, ec2_client)
     cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', sg, ec2_client)
@@ -337,7 +339,7 @@ def initialize_infra(ec2_client, ec2_resource, elb_client):
     listener_cluster1 = create_listener(elb_client, cluster1_tg, cluster1_elb)
     listener_cluster2 = create_listener(elb_client, cluster2_tg, cluster2_elb)
 
-    return cluster1_elb, cluster2_elb
+    return cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg
 
 # PROGRAM EXECUTION
 
@@ -348,20 +350,15 @@ elb_client = boto3.client('elbv2')
 cw_client = boto3.client('cloudwatch')
 
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
-cluster1_elb, cluster2_elb = initialize_infra(ec2_client=ec2_client, ec2_resource=ec2_resource, elb_client=elb_client)
+cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(ec2_client=ec2_client, ec2_resource=ec2_resource, elb_client=elb_client)
 time.sleep(60)
 
 # 3. Run workloads
 run_workloads(cluster1_elb, cluster2_elb)
 
-
-"""
-#cleanUp(elb_client, sg, m4Instances, t2Instances, [listener_cluster1, listener_cluster2], [cluster1_tg, cluster2_tg], [cluster1_elb, cluster2_elb])
-# 3. Run workloads
-run_workloads(elb_client)
-
 # 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 query = build_cloudwatch_query()
+
 # 5. Query CloudWatch client using built query
 response = get_data(cw_client=cw_client, query=query)
 print(response)
@@ -371,4 +368,8 @@ print(response)
 
 # 7. Generate graphs and save under /metrics folder
 generate_graphs(metrics_cluster1, metrics_cluster2)
-print('Done')"""
+
+# 8. Cleanup infra
+# cleanUp(elb_client, sg, m4Instances, t2Instances, [listener_cluster1, listener_cluster2], [cluster1_tg, cluster2_tg], [cluster1_elb, cluster2_elb])
+
+print('Done.')
