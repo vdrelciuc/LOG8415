@@ -203,7 +203,7 @@ def appendMetricDataQy(container, cluster_id, metrics, dimension):
                     ]
                 },
                 "Period": 60,
-                "Stat": "Average",
+                "Stat": "Sum",
             }
         })
 
