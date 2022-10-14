@@ -4,6 +4,8 @@ import requests
 import threading
 import time
 import matplotlib
+
+from infrastructure_builder import InfrastructureBuilder
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import subprocess
@@ -34,13 +36,13 @@ def create_instances(ec2_resource, instanceType, count, imageId, keyName):
     )
 
 def create_security_group(ec2_resource):
-    response_vpcs = ec2_client.describe_vpcs()
+    response_vpcs = ib.ec2_client.describe_vpcs()
     vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    response_sg = ec2_client.create_security_group(GroupName='custom-sec-group',
+    response_sg = ib.ec2_client.create_security_group(GroupName='custom-sec-group-1',
         Description='Security group for our instances',
         VpcId=vpc_id)
     sg_id = response_sg['GroupId']
-    ec2_client.authorize_security_group_ingress(
+    ib.ec2_client.authorize_security_group_ingress(
         GroupId=sg_id,
         IpPermissions=[
         {'IpProtocol': 'tcp',
@@ -259,9 +261,9 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
         plt.legend(loc='best')
         plt.savefig(f"graphs/{label}")
 
-def initialize_infra(ec2_client, ec2_resource, elb_client):
+def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
     print('Started initializing infrastructure.')
-    sg = create_security_group(ec2_resource)
+    sg = infra_builder.create_security_group('custom-sec-group')
     m4Instances = create_instances(ec2_resource, 'm4.large', 5, 'ami-08c40ec9ead489470', 'vockey')
     t2Instances = create_instances(ec2_resource, 't2.large', 4, 'ami-08c40ec9ead489470', 'vockey')
 
@@ -314,13 +316,14 @@ def print_response(response):
 # PROGRAM EXECUTION
 
 # # 1. Initialize AWS clients
-ec2_client = boto3.client('ec2')
-ec2_resource = boto3.resource('ec2')
-elb_client = boto3.client('elbv2')
+#ec2_client = boto3.client('ec2')
+#ec2_resource = boto3.resource('ec2')
+#elb_client = boto3.client('elbv2')
 cw_client = boto3.client('cloudwatch')
 
+ib = InfrastructureBuilder()
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
-cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(ec2_client=ec2_client, ec2_resource=ec2_resource, elb_client=elb_client)
+cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(ec2_client=ib.ec2_client, ec2_resource=ib.ec2_resource, elb_client=ib.elb_client, infra_builder=ib)
 time.sleep(90)
 
 # 3. Run workloads
