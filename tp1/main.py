@@ -237,7 +237,7 @@ class MetricData:
         label[2] = label[2].split()[1]      # ["app", "t2-app-load-balancer", "ActiveConnectionCount"]
         label.pop(1)                        # ["app", "ActiveConnectionCount"]
 
-        self.label = ":".join(label)
+        self.label = "-".join(label)
         self.timestamps = metric["Timestamps"]
         self.values = metric["Values"]
 
