@@ -22,19 +22,6 @@ elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
 tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
-def create_listener(client, targetGroup, loadBalancer):
-    return client.create_listener(
-        DefaultActions=[
-            {
-                'TargetGroupArn': targetGroup['TargetGroups'][0]['TargetGroupArn'],
-                'Type': 'forward',
-            },
-        ],
-        LoadBalancerArn=loadBalancer['LoadBalancers'][0]['LoadBalancerArn'],
-        Port=80,
-        Protocol='HTTP',
-    )
-
 def call_endpoint_http(cluster):
     headers = {'content-type': 'application/json'}
     url = 'http://' + cluster
@@ -201,7 +188,7 @@ def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
 
     security_group = infra_builder.create_security_group('custom-sec-group-1')
 
-    user_data = open('flask_startup.sh', 'r')
+    user_data = open('flask_startup.sh', 'r').read()
     m4_Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
     t2_Instances = infra_builder.create_instances('t2.large', 4, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
 
@@ -214,8 +201,8 @@ def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
     infra_builder.register_targets(cluster1_tg, m4_Instances)
     infra_builder.register_targets(cluster2_tg, t2_Instances)
 
-    listener_cluster1 = create_listener(elb_client, cluster1_tg, cluster1_elb)
-    listener_cluster2 = create_listener(elb_client, cluster2_tg, cluster2_elb)
+    listener_cluster1 = infra_builder.create_listener(cluster1_tg, cluster1_elb)
+    listener_cluster2 = infra_builder.create_listener(cluster2_tg, cluster2_elb)
 
     print('Finished initializing infrastructure.')
 
@@ -236,9 +223,6 @@ def print_response(response):
 # PROGRAM EXECUTION
 
 # # 1. Initialize AWS clients
-#ec2_client = boto3.client('ec2')
-#ec2_resource = boto3.resource('ec2')
-#elb_client = boto3.client('elbv2')
 cw_client = boto3.client('cloudwatch')
 
 ib = InfrastructureBuilder()

@@ -40,7 +40,7 @@ class InfrastructureBuilder:
             MaxCount=count,
             ImageId=image_id,
             KeyName=key_name,
-            UserData=user_data.read(),
+            UserData=user_data,
             SecurityGroups=[security_group_name]
         )
 
@@ -87,6 +87,19 @@ class InfrastructureBuilder:
         return self.elb_client.register_targets(
             TargetGroupArn=target_group['TargetGroups'][0]['TargetGroupArn'],
             Targets=targets
+        )
+
+    def create_listener(self, target_group, load_balancer):
+        return self.elb_client.create_listener(
+            DefaultActions=[
+                {
+                    'TargetGroupArn': target_group['TargetGroups'][0]['TargetGroupArn'],
+                    'Type': 'forward',
+                },
+            ],
+            LoadBalancerArn=load_balancer['LoadBalancers'][0]['LoadBalancerArn'],
+            Port=80,
+            Protocol='HTTP',
         )
 
     
