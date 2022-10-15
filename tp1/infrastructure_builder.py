@@ -32,3 +32,14 @@ class InfrastructureBuilder:
         ])
         
         return self.ec2_resource.SecurityGroup(response_security_group['GroupId'])
+
+    def create_instances(self, instance_type, count, image_id, key_name, user_data, security_group_name):
+        return self.ec2_resource.create_instances(
+            InstanceType = instance_type,
+            MinCount = count,
+            MaxCount = count,
+            ImageId = image_id,
+            KeyName = key_name,
+            UserData = user_data.read(),
+            SecurityGroups = [security_group_name]
+        )

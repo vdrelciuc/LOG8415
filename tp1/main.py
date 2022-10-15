@@ -23,39 +23,6 @@ tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
 
-def create_instances(ec2_resource, instanceType, count, imageId, keyName):
-    user_data = open('flask_startup.sh', 'r')
-    return ec2_resource.create_instances(
-        InstanceType = instanceType,
-        MinCount = count,
-        MaxCount = count,
-        ImageId = imageId,
-        KeyName = keyName,
-        UserData = user_data.read(),
-        SecurityGroups = ['custom-sec-group']
-    )
-
-def create_security_group(ec2_resource):
-    response_vpcs = ib.ec2_client.describe_vpcs()
-    vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    response_sg = ib.ec2_client.create_security_group(GroupName='custom-sec-group-1',
-        Description='Security group for our instances',
-        VpcId=vpc_id)
-    sg_id = response_sg['GroupId']
-    ib.ec2_client.authorize_security_group_ingress(
-        GroupId=sg_id,
-        IpPermissions=[
-        {'IpProtocol': 'tcp',
-            'FromPort': 80,
-            'ToPort': 80,
-            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]},
-        {'IpProtocol': 'tcp',
-            'FromPort': 22,
-            'ToPort': 22,
-            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
-    ])
-    return ec2_resource.SecurityGroup(response_sg['GroupId'])
-
 def create_load_balancer(client, name, sg, ec2_client):
     subnets = []
     sn_all = ec2_client.describe_subnets()
@@ -263,12 +230,14 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
 
 def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
     print('Started initializing infrastructure.')
-    sg = infra_builder.create_security_group('custom-sec-group')
-    m4Instances = create_instances(ec2_resource, 'm4.large', 5, 'ami-08c40ec9ead489470', 'vockey')
-    t2Instances = create_instances(ec2_resource, 't2.large', 4, 'ami-08c40ec9ead489470', 'vockey')
+    security_group = infra_builder.create_security_group('custom-sec-group-2')
 
-    cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', sg, ec2_client)
-    cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', sg, ec2_client)
+    user_data = open('flask_startup.sh', 'r')
+    m4Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
+    t2Instances = infra_builder.create_instances('t2.large', 4, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
+
+    cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', security_group, ec2_client)
+    cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', security_group, ec2_client)
 
     cluster1_tg = create_target_group(elb_client, 'cluster1-tg', ec2_client)
     cluster2_tg = create_target_group(elb_client, 'cluster2-tg', ec2_client)
@@ -299,7 +268,7 @@ def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
 
     print('Finished initializing infrastructure.')
 
-    return cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg
+    return cluster1_elb, cluster2_elb, security_group, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg
 
 def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
