@@ -1,13 +1,12 @@
 from datetime import date, datetime, timedelta
+
 from infrastructure_builder import InfrastructureBuilder
+from metric_data import MetricData
 from workloads import run_workloads
-import workloads
+
 import boto3
-import requests
-import threading
 import time
 import matplotlib
-
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -25,9 +24,6 @@ elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
 tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
-def initialize_cloudwatch():
-    return boto3.client('cloudwatch')
-
 def build_cloudwatch_query():
     # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
     targetgroup_val_1, targetgroup_val_2 = "targetgroup/cluster1-tg", "targetgroup/cluster2-tg"
@@ -108,19 +104,6 @@ def parse_data(response):
     cluster1_data = elb_metrics_cluster1 + tg_metrics_cluster1
     cluster2_data = elb_metrics_cluster2 + tg_metrics_cluster2
     return cluster1_data, cluster2_data
-
-
-class MetricData:
-    def __init__(self, metric):
-        # "app/t2-app-load-balancer/4db0b61e07b90a45 ActiveConnectionCount"
-        label = metric["Label"].split("/")  # ["app", "t2-app-load-balancer", "4db0b61e07b90a45 ActiveConnectionCount"]
-        label[2] = label[2].split()[1]      # ["app", "t2-app-load-balancer", "ActiveConnectionCount"]
-        label.pop(1)                        # ["app", "ActiveConnectionCount"]
-
-        self.label = "-".join(label)
-        self.timestamps = metric["Timestamps"]
-        self.values = metric["Values"]
-
 
 def generate_graphs(metrics_cluster1, metrics_cluster2):
     print('Generating graphs under graphs/.')

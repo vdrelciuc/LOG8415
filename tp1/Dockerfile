@@ -10,6 +10,8 @@ COPY main.py /
 
 COPY infrastructure_builder.py /
 
+COPY metric_data.py /
+
 COPY workloads.py /
 
 COPY .env /
