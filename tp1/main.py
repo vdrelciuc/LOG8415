@@ -230,14 +230,15 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
 
 def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
     print('Started initializing infrastructure.')
-    security_group = infra_builder.create_security_group('custom-sec-group-2')
+    
+    security_group = infra_builder.create_security_group('custom-sec-group')
 
     user_data = open('flask_startup.sh', 'r')
     m4Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
     t2Instances = infra_builder.create_instances('t2.large', 4, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
 
-    cluster1_elb = create_load_balancer(elb_client, 'cluster1-elb', security_group, ec2_client)
-    cluster2_elb = create_load_balancer(elb_client, 'cluster2-elb', security_group, ec2_client)
+    cluster1_elb = infra_builder.create_load_balancer('cluster1-elb', security_group.id)
+    cluster2_elb = infra_builder.create_load_balancer('cluster2-elb', security_group.id)
 
     cluster1_tg = create_target_group(elb_client, 'cluster1-tg', ec2_client)
     cluster2_tg = create_target_group(elb_client, 'cluster2-tg', ec2_client)

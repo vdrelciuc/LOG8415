@@ -43,3 +43,18 @@ class InfrastructureBuilder:
             UserData = user_data.read(),
             SecurityGroups = [security_group_name]
         )
+
+    def create_load_balancer(self, name, security_group_id):
+        subnets = []
+        ec2_client_subnets = self.ec2_client.describe_subnets()
+        for subnet in ec2_client_subnets['Subnets'] :
+            subnets.append(subnet['SubnetId'])
+
+        return self.elb_client.create_load_balancer(
+            Name=name,
+            SecurityGroups=[
+                security_group_id
+            ],
+            IpAddressType='ipv4',
+            Subnets= subnets
+        )
