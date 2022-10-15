@@ -69,3 +69,25 @@ class InfrastructureBuilder:
             Port=80,
             VpcId=vpc_id
         )
+    
+    def get_targets(self, target_instances):
+        targets = []
+        for instance in target_instances:
+            targets.append({
+                "Id": instance.id
+            })
+        return targets
+    
+    def register_targets(self, target_group, instances):
+        targets = self.get_targets(instances)
+
+        for instance in instances:
+            instance.wait_until_running()
+        
+        return self.elb_client.register_targets(
+            TargetGroupArn=target_group['TargetGroups'][0]['TargetGroupArn'],
+            Targets=targets
+        )
+
+    
+

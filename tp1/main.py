@@ -22,22 +22,6 @@ elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
 tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
-def create_target_group(client, name, ec2_client):
-    response_vpcs = ec2_client.describe_vpcs()
-    vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
-    return client.create_target_group(
-        Name=name,
-        Protocol='HTTP',
-        Port=80,
-        VpcId=vpc_id
-    )
-
-def register_targets(client, targetGroup, targets):
-    return client.register_targets(
-        TargetGroupArn=targetGroup['TargetGroups'][0]['TargetGroupArn'],
-        Targets=targets
-    )
-
 def create_listener(client, targetGroup, loadBalancer):
     return client.create_listener(
         DefaultActions=[
@@ -215,11 +199,11 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
 def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
     print('Started initializing infrastructure.')
 
-    security_group = infra_builder.create_security_group('custom-sec-group')
+    security_group = infra_builder.create_security_group('custom-sec-group-1')
 
     user_data = open('flask_startup.sh', 'r')
-    m4Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
-    t2Instances = infra_builder.create_instances('t2.large', 4, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
+    m4_Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
+    t2_Instances = infra_builder.create_instances('t2.large', 4, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
 
     cluster1_elb = infra_builder.create_load_balancer('cluster1-elb', security_group.id)
     cluster2_elb = infra_builder.create_load_balancer('cluster2-elb', security_group.id)
@@ -227,33 +211,15 @@ def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
     cluster1_tg = infra_builder.create_target_group('cluster1-tg')
     cluster2_tg = infra_builder.create_target_group('cluster2-tg')
 
-    m4targets = []
-    for ins in m4Instances:
-        m4targets.append({
-            "Id": ins.id
-        })
-
-    t2targets = []
-    for ins in t2Instances:
-        t2targets.append({
-            "Id": ins.id
-        })
-
-    for instance in m4Instances:
-        instance.wait_until_running()
-
-    for instance in t2Instances:
-        instance.wait_until_running()
-
-    register_targets(elb_client, cluster1_tg, m4targets)
-    register_targets(elb_client, cluster2_tg, t2targets)
+    infra_builder.register_targets(cluster1_tg, m4_Instances)
+    infra_builder.register_targets(cluster2_tg, t2_Instances)
 
     listener_cluster1 = create_listener(elb_client, cluster1_tg, cluster1_elb)
     listener_cluster2 = create_listener(elb_client, cluster2_tg, cluster2_elb)
 
     print('Finished initializing infrastructure.')
 
-    return cluster1_elb, cluster2_elb, security_group, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg
+    return cluster1_elb, cluster2_elb, security_group, m4_Instances, t2_Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg
 
 def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
