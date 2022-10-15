@@ -35,13 +35,13 @@ class InfrastructureBuilder:
 
     def create_instances(self, instance_type, count, image_id, key_name, user_data, security_group_name):
         return self.ec2_resource.create_instances(
-            InstanceType = instance_type,
-            MinCount = count,
-            MaxCount = count,
-            ImageId = image_id,
-            KeyName = key_name,
-            UserData = user_data.read(),
-            SecurityGroups = [security_group_name]
+            InstanceType=instance_type,
+            MinCount=count,
+            MaxCount=count,
+            ImageId=image_id,
+            KeyName=key_name,
+            UserData=user_data.read(),
+            SecurityGroups=[security_group_name]
         )
 
     def create_load_balancer(self, name, security_group_id):
@@ -57,4 +57,15 @@ class InfrastructureBuilder:
             ],
             IpAddressType='ipv4',
             Subnets= subnets
+        )
+
+    def create_target_group(self, name):
+        response_vpcs = self.ec2_client.describe_vpcs()
+        vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
+        
+        return self.elb_client.create_target_group(
+            Name=name,
+            Protocol='HTTP',
+            Port=80,
+            VpcId=vpc_id
         )

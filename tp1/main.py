@@ -22,22 +22,6 @@ elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
 tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
-
-def create_load_balancer(client, name, sg, ec2_client):
-    subnets = []
-    sn_all = ec2_client.describe_subnets()
-    for sn in sn_all['Subnets'] :
-        subnets.append(sn['SubnetId'])
-
-    return client.create_load_balancer(
-        Name=name,
-        SecurityGroups=[
-            sg.id
-        ],
-        IpAddressType='ipv4',
-        Subnets= subnets
-    )
-
 def create_target_group(client, name, ec2_client):
     response_vpcs = ec2_client.describe_vpcs()
     vpc_id = response_vpcs.get('Vpcs', [{}])[0].get('VpcId', '')
@@ -230,7 +214,7 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
 
 def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
     print('Started initializing infrastructure.')
-    
+
     security_group = infra_builder.create_security_group('custom-sec-group')
 
     user_data = open('flask_startup.sh', 'r')
@@ -240,8 +224,8 @@ def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
     cluster1_elb = infra_builder.create_load_balancer('cluster1-elb', security_group.id)
     cluster2_elb = infra_builder.create_load_balancer('cluster2-elb', security_group.id)
 
-    cluster1_tg = create_target_group(elb_client, 'cluster1-tg', ec2_client)
-    cluster2_tg = create_target_group(elb_client, 'cluster2-tg', ec2_client)
+    cluster1_tg = infra_builder.create_target_group('cluster1-tg')
+    cluster2_tg = infra_builder.create_target_group('cluster2-tg')
 
     m4targets = []
     for ins in m4Instances:
