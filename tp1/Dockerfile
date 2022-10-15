@@ -10,6 +10,8 @@ COPY main.py /
 
 COPY infrastructure_builder.py /
 
+COPY workloads.py /
+
 COPY .env /
 
 COPY flask_startup.sh /

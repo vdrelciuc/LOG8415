@@ -1,11 +1,14 @@
 from datetime import date, datetime, timedelta
+from infrastructure_builder import InfrastructureBuilder
+from workloads import run_workloads
+import workloads
 import boto3
 import requests
 import threading
 import time
 import matplotlib
 
-from infrastructure_builder import InfrastructureBuilder
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import subprocess
@@ -22,53 +25,6 @@ elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
 tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
-def call_endpoint_http(cluster):
-    headers = {'content-type': 'application/json'}
-    url = 'http://' + cluster
-    request = requests.get(url, headers=headers, verify=False)
-    return request
-
-def run_first_workload(t2_cluster, m4_cluster):
-    # 1000 GET requests sequentially
-    print('Started first workload.')
-    for _ in range(1000):
-        call_endpoint_http(t2_cluster)
-        call_endpoint_http(m4_cluster)
-    print('Finished first workload.')
-
-def run_second_workload(t2_cluster, m4_cluster):
-    # 500 GET requests, then one minute sleep, followed by 1000 GET requests
-    print('Started second workload.')
-    for _ in range(500):
-        call_endpoint_http(t2_cluster)
-        call_endpoint_http(m4_cluster)
-
-    time.sleep(60)
-
-    for _ in range(1000):
-        call_endpoint_http(t2_cluster)
-        call_endpoint_http(m4_cluster)
-    print('Finished second workload.')
-
-def run_workloads(cluster1_elb, cluster2_elb):
-    m4_cluster = cluster1_elb['LoadBalancers'][0]['DNSName']
-    t2_cluster = cluster2_elb['LoadBalancers'][0]['DNSName']
-
-    t2_code, m4_code = 0, 0
-    while (t2_code != 200) and (m4_code != 200):
-        t2_code = call_endpoint_http(t2_cluster).status_code
-        m4_code = call_endpoint_http(m4_cluster).status_code
-        time.sleep(2)
-
-    first_workload_thread = threading.Thread(target=run_first_workload, args=(t2_cluster,m4_cluster))
-    second_workload_thread = threading.Thread(target=run_second_workload, args=(t2_cluster,m4_cluster))
-
-    first_workload_thread.start()
-    second_workload_thread.start()
-
-    first_workload_thread.join()
-    second_workload_thread.join()
-
 def initialize_cloudwatch():
     return boto3.client('cloudwatch')
 
@@ -183,10 +139,10 @@ def generate_graphs(metrics_cluster1, metrics_cluster2):
         plt.legend(loc='best')
         plt.savefig(f"graphs/{label}")
 
-def initialize_infra(ec2_client, ec2_resource, elb_client, infra_builder):
+def initialize_infra(infra_builder):
     print('Started initializing infrastructure.')
 
-    security_group = infra_builder.create_security_group('custom-sec-group-1')
+    security_group = infra_builder.create_security_group('custom-sec-group-2')
 
     user_data = open('flask_startup.sh', 'r').read()
     m4_Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
@@ -225,9 +181,9 @@ def print_response(response):
 # # 1. Initialize AWS clients
 cw_client = boto3.client('cloudwatch')
 
-ib = InfrastructureBuilder()
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
-cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(ec2_client=ib.ec2_client, ec2_resource=ib.ec2_resource, elb_client=ib.elb_client, infra_builder=ib)
+ib = InfrastructureBuilder()
+cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(infra_builder=ib)
 time.sleep(90)
 
 # 3. Run workloads
