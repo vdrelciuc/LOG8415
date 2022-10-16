@@ -52,8 +52,8 @@ def print_response(response):
 # PROGRAM EXECUTION
 
 # 1. Generate infrastructure (EC2 instances, load balancers and target groups)
-ib = InfrastructureBuilder()
-cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(infra_builder=ib)
+infra_builder = InfrastructureBuilder()
+cluster1_elb, cluster2_elb, sg, m4_instances, t2_instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(infra_builder=infra_builder)
 time.sleep(90)
 
 # 2. Run workloads
