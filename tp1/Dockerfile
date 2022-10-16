@@ -12,7 +12,7 @@ COPY infrastructure_builder.py /
 
 COPY metric_data.py /
 
-COPY query_builder.py /
+COPY cloudwatch_monitor.py /
 
 COPY workloads.py /
 

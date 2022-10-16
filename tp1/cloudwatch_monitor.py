@@ -1,9 +1,11 @@
+from datetime import date, datetime, timedelta
 import boto3
 
+# Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['RequestCountPerTarget']
 ELB_CLOUDWATCH_METRICS = ['NewConnectionCount', 'ProcessedBytes', 'TargetResponseTime']
 
-class QueryBuilder:
+class CloudWatchMonitor:
 
     def __init__(self):
         self.cw_client = boto3.client('cloudwatch')
@@ -66,3 +68,13 @@ class QueryBuilder:
             self.appendMetricDataQy(metricDataQy, metric_action[0], metric_action[2], metric_action[1])
 
         return metricDataQy
+
+    def get_data(self, query):
+        print('Started querying CloudWatch.')
+        return self.cw_client.get_metric_data(
+            MetricDataQueries=query,
+            StartTime=datetime.utcnow() - timedelta(minutes=30), # metrics from the last 30 mins (estimated max workload time)
+            EndTime=datetime.utcnow(),
+        )
+
+    

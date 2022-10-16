@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from infrastructure_builder import InfrastructureBuilder
 from metric_data import MetricData
 from workloads import run_workloads
-from query_builder import QueryBuilder
+from cloudwatch_monitor import CloudWatchMonitor
 
 import boto3
 import time
@@ -25,76 +25,6 @@ elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
 tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
 
 # DEFINE FUNCTIONS HERE
-def build_cloudwatch_query():
-    # from doc https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
-    targetgroup_val_1, targetgroup_val_2 = "targetgroup/cluster1-tg", "targetgroup/cluster2-tg"
-    loadbal_val_1, loadbal_val_2 = "app/cluster1-elb", "app/cluster2-elb"
-    response_elb = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
-        {
-            'Name': 'LoadBalancer',
-        },
-    ])
-    response_tg = cw_client.list_metrics(Namespace= 'AWS/ApplicationELB', MetricName= 'RequestCount', Dimensions=[
-        {
-            'Name': 'TargetGroup',
-        },
-    ])
-    dimension_tg_1 = dimension_tg_2 = dimension_lb_1 = dimension_lb_2 = None
-    
-    for response in response_elb["Metrics"]:
-        dimension = response["Dimensions"][0]
-        if targetgroup_val_1 in dimension["Value"]:
-            dimension_tg_1 = dimension
-        elif targetgroup_val_2 in dimension["Value"]:
-            dimension_tg_2 = dimension
-
-    for response in response_tg["Metrics"]:
-        dimension = response["Dimensions"][1]
-        if loadbal_val_1 in dimension["Value"]:
-            dimension_lb_1 = dimension
-        elif loadbal_val_2 in dimension["Value"]:
-            dimension_lb_2 = dimension
-
-    metricDataQy = []
-    metric_pipeline = [(1, dimension_tg_1, TARGET_GROUP_CLOUDWATCH_METRICS), (2, dimension_tg_2, TARGET_GROUP_CLOUDWATCH_METRICS),
-        (1, dimension_lb_1, ELB_CLOUDWATCH_METRICS), (2, dimension_lb_2, ELB_CLOUDWATCH_METRICS)]
-    
-    for metric_action in metric_pipeline:
-        appendMetricDataQy(metricDataQy, metric_action[0], metric_action[2], metric_action[1])
-
-    return metricDataQy
-
-def appendMetricDataQy(container, cluster_id, metrics, dimension):
-    for metric in metrics:
-        container.append({
-            "Id": (metric + dimension["Name"] + str(cluster_id)).lower(),
-            "MetricStat": {
-                "Metric": {
-                    "Namespace": "AWS/ApplicationELB",
-                    "MetricName": metric,
-                    "Dimensions": [
-                        {
-                            "Name": dimension["Name"],
-                            "Value": dimension["Value"]
-                        }
-                    ]
-                },
-                "Period": 60,
-                "Stat": "Sum",
-            }
-        })
-
-
-def get_data(query_builder):
-    query = query_builder.build_cloudwatch_query()
-
-    print('Started querying CloudWatch.')
-    return query_builder.cw_client.get_metric_data(
-        MetricDataQueries=query,
-        StartTime=datetime.utcnow() - timedelta(minutes=30), # metrics from the last 30 mins (estimated max workload time)
-        EndTime=datetime.utcnow(),
-    )
-
 def parse_data(response):
     global elb_metrics_count, tg_metrics_count
     results = response["MetricDataResults"]
@@ -164,31 +94,28 @@ def print_response(response):
 
 # PROGRAM EXECUTION
 
-# # 1. Initialize AWS clients
-#cw_client = boto3.client('cloudwatch')
-
-# 2. Generate infrastructure (EC2 instances, load balancers and target groups)
+# 1. Generate infrastructure (EC2 instances, load balancers and target groups)
 ib = InfrastructureBuilder()
 cluster1_elb, cluster2_elb, sg, m4Instances, t2Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(infra_builder=ib)
 time.sleep(90)
 
-# 3. Run workloads
+# 2. Run workloads
 run_workloads(cluster1_elb, cluster2_elb)
 
-# 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
-qb = QueryBuilder()
+# 3. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
+cloudwatch_monitor = CloudWatchMonitor()
+query = cloudwatch_monitor.build_cloudwatch_query()
 
+# 4. Query CloudWatch client using built query
+response = cloudwatch_monitor.get_data(query)
 
-# 5. Query CloudWatch client using built query
-response = get_data(qb)
-
-# 6. Save output to response.json
+# 5. Save output to response.json
 print_response(response)
 
-# 7. Parse MetricDataResults and store metrics
+# 6. Parse MetricDataResults and store metrics
 (metrics_cluster1, metrics_cluster2) = parse_data(response)
 
-# 8. Generate graphs and save under /metrics folder
+# 7. Generate graphs and save under /metrics folder
 generate_graphs(metrics_cluster1, metrics_cluster2)
 
 print('Done.')
