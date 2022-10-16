@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from infrastructure_builder import InfrastructureBuilder
 from metric_data import MetricData
 from workloads import run_workloads
+from query_builder import QueryBuilder
 
 import boto3
 import time
@@ -84,9 +85,11 @@ def appendMetricDataQy(container, cluster_id, metrics, dimension):
         })
 
 
-def get_data(cw_client, query):
+def get_data(query_builder):
+    query = query_builder.build_cloudwatch_query()
+
     print('Started querying CloudWatch.')
-    return cw_client.get_metric_data(
+    return query_builder.cw_client.get_metric_data(
         MetricDataQueries=query,
         StartTime=datetime.utcnow() - timedelta(minutes=30), # metrics from the last 30 mins (estimated max workload time)
         EndTime=datetime.utcnow(),
@@ -162,7 +165,7 @@ def print_response(response):
 # PROGRAM EXECUTION
 
 # # 1. Initialize AWS clients
-cw_client = boto3.client('cloudwatch')
+#cw_client = boto3.client('cloudwatch')
 
 # 2. Generate infrastructure (EC2 instances, load balancers and target groups)
 ib = InfrastructureBuilder()
@@ -173,10 +176,11 @@ time.sleep(90)
 run_workloads(cluster1_elb, cluster2_elb)
 
 # 4. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
-query = build_cloudwatch_query()
+qb = QueryBuilder()
+
 
 # 5. Query CloudWatch client using built query
-response = get_data(cw_client=cw_client, query=query)
+response = get_data(qb)
 
 # 6. Save output to response.json
 print_response(response)
