@@ -17,27 +17,6 @@ import json
 
 from matplotlib.dates import (DateFormatter)
 
-# Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
-TARGET_GROUP_CLOUDWATCH_METRICS = ['RequestCountPerTarget']
-ELB_CLOUDWATCH_METRICS = ['NewConnectionCount', 'ProcessedBytes', 'TargetResponseTime']
-
-elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
-tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
-
-# DEFINE FUNCTIONS HERE
-def parse_data(response):
-    global elb_metrics_count, tg_metrics_count
-    results = response["MetricDataResults"]
-
-    tg_metrics_cluster1 = results[:tg_metrics_count]
-    tg_metrics_cluster2 = results[tg_metrics_count:tg_metrics_count * 2]
-    elb_metrics_cluster1 = results[tg_metrics_count * 2:tg_metrics_count * 2 + elb_metrics_count]
-    elb_metrics_cluster2 = results[tg_metrics_count * 2 + elb_metrics_count:]
-
-    cluster1_data = elb_metrics_cluster1 + tg_metrics_cluster1
-    cluster2_data = elb_metrics_cluster2 + tg_metrics_cluster2
-    return cluster1_data, cluster2_data
-
 def generate_graphs(metrics_cluster1, metrics_cluster2):
     print('Generating graphs under graphs/.')
     for i in range(len(metrics_cluster1)):
@@ -113,7 +92,7 @@ response = cloudwatch_monitor.get_data(query)
 print_response(response)
 
 # 6. Parse MetricDataResults and store metrics
-(metrics_cluster1, metrics_cluster2) = parse_data(response)
+(metrics_cluster1, metrics_cluster2) = cloudwatch_monitor.parse_data(response)
 
 # 7. Generate graphs and save under /metrics folder
 generate_graphs(metrics_cluster1, metrics_cluster2)

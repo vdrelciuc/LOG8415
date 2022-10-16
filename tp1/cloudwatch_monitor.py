@@ -5,6 +5,9 @@ import boto3
 TARGET_GROUP_CLOUDWATCH_METRICS = ['RequestCountPerTarget']
 ELB_CLOUDWATCH_METRICS = ['NewConnectionCount', 'ProcessedBytes', 'TargetResponseTime']
 
+elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
+tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
+
 class CloudWatchMonitor:
 
     def __init__(self):
@@ -76,5 +79,18 @@ class CloudWatchMonitor:
             StartTime=datetime.utcnow() - timedelta(minutes=30), # metrics from the last 30 mins (estimated max workload time)
             EndTime=datetime.utcnow(),
         )
+
+    def parse_data(self, response):
+        global elb_metrics_count, tg_metrics_count
+        results = response["MetricDataResults"]
+
+        tg_metrics_cluster1 = results[:tg_metrics_count]
+        tg_metrics_cluster2 = results[tg_metrics_count:tg_metrics_count * 2]
+        elb_metrics_cluster1 = results[tg_metrics_count * 2:tg_metrics_count * 2 + elb_metrics_count]
+        elb_metrics_cluster2 = results[tg_metrics_count * 2 + elb_metrics_count:]
+
+        cluster1_data = elb_metrics_cluster1 + tg_metrics_cluster1
+        cluster2_data = elb_metrics_cluster2 + tg_metrics_cluster2
+        return cluster1_data, cluster2_data
 
     
