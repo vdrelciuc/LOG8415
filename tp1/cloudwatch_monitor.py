@@ -1,5 +1,12 @@
 from datetime import date, datetime, timedelta
+from metric_data import MetricData
+
 import boto3
+import matplotlib
+
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.dates import (DateFormatter)
 
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['RequestCountPerTarget']
@@ -92,5 +99,22 @@ class CloudWatchMonitor:
         cluster1_data = elb_metrics_cluster1 + tg_metrics_cluster1
         cluster2_data = elb_metrics_cluster2 + tg_metrics_cluster2
         return cluster1_data, cluster2_data
+
+    def generate_graphs(self, metrics_cluster1, metrics_cluster2):
+        print('Generating graphs under graphs/.')
+        for i in range(len(metrics_cluster1)):
+            data_cluster1 = MetricData(metrics_cluster1[i])
+            data_cluster2 = MetricData(metrics_cluster2[i])
+            formatter = DateFormatter("%H:%M:%S")
+            label = data_cluster1.label
+
+            fig, ax = plt.subplots()
+            ax.xaxis.set_major_formatter(formatter)
+            plt.xlabel("Timestamps")
+            plt.plot(data_cluster1.timestamps, data_cluster1.values, label="Cluster 1")
+            plt.plot(data_cluster2.timestamps, data_cluster2.values, label="Cluster 2")
+            plt.title(label)
+            plt.legend(loc='best')
+            plt.savefig(f"graphs/{label}")
 
     

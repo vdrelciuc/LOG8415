@@ -5,39 +5,17 @@ from metric_data import MetricData
 from workloads import run_workloads
 from cloudwatch_monitor import CloudWatchMonitor
 
-import boto3
 import time
-import matplotlib
-
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import subprocess
 import multiprocessing
 import json
 
 from matplotlib.dates import (DateFormatter)
 
-def generate_graphs(metrics_cluster1, metrics_cluster2):
-    print('Generating graphs under graphs/.')
-    for i in range(len(metrics_cluster1)):
-        data_cluster1 = MetricData(metrics_cluster1[i])
-        data_cluster2 = MetricData(metrics_cluster2[i])
-        formatter = DateFormatter("%H:%M:%S")
-        label = data_cluster1.label
-
-        fig, ax = plt.subplots()
-        ax.xaxis.set_major_formatter(formatter)
-        plt.xlabel("Timestamps")
-        plt.plot(data_cluster1.timestamps, data_cluster1.values, label="Cluster 1")
-        plt.plot(data_cluster2.timestamps, data_cluster2.values, label="Cluster 2")
-        plt.title(label)
-        plt.legend(loc='best')
-        plt.savefig(f"graphs/{label}")
-
 def initialize_infra(infra_builder):
     print('Started initializing infrastructure.')
 
-    security_group = infra_builder.create_security_group('custom-sec-group-2')
+    security_group = infra_builder.create_security_group('custom-sec-group')
 
     user_data = open('flask_startup.sh', 'r').read()
     m4_Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
@@ -95,6 +73,6 @@ print_response(response)
 (metrics_cluster1, metrics_cluster2) = cloudwatch_monitor.parse_data(response)
 
 # 7. Generate graphs and save under /metrics folder
-generate_graphs(metrics_cluster1, metrics_cluster2)
+cloudwatch_monitor.generate_graphs(metrics_cluster1, metrics_cluster2)
 
 print('Done.')
