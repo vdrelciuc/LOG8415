@@ -17,9 +17,10 @@ def initialize_infra(infra_builder):
 
     security_group = infra_builder.create_security_group('custom-sec-group')
 
-    user_data = open('flask_startup.sh', 'r').read()
-    m4_Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
-    t2_Instances = infra_builder.create_instances('t2.large', 4, 'ami-08c40ec9ead489470', 'vockey', user_data, security_group.group_name)
+    user_data_cluster1 = open('flask_setup_cluster1.sh', 'r').read()
+    user_data_cluster2 = open('flask_setup_cluster2.sh', 'r').read()
+    m4_Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data_cluster1, security_group.group_name)
+    t2_Instances = infra_builder.create_instances('t2.large', 4, 'ami-08c40ec9ead489470', 'vockey', user_data_cluster2, security_group.group_name)
 
     cluster1_elb = infra_builder.create_load_balancer('cluster1-elb', security_group.id)
     cluster2_elb = infra_builder.create_load_balancer('cluster2-elb', security_group.id)

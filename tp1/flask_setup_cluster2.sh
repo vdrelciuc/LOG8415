@@ -8,7 +8,7 @@ cd flask_app
 instance_id=$(ec2metadata --instance-id) 
 echo "from flask import Flask
 app = Flask(__name__)
-@app.route('/')
+@app.route('/cluster2')
 def myFlaskApp():
 
         return \""$instance_id" is responding now! \"

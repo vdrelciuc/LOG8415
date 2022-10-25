@@ -18,6 +18,8 @@ COPY workloads.py /
 
 COPY .env /
 
-COPY flask_startup.sh /
+COPY flask_setup_cluster1.sh /
+
+COPY flask_setup_cluster2.sh /
 
 CMD [ "python", "./main.py" ]
