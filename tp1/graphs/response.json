@@ -3,158 +3,70 @@
     "MetricDataResults": [
         {
             "Id": "requestcountpertargettargetgroup1",
-            "Label": "targetgroup/cluster1-tg/ca935c49c72b7991 RequestCountPerTarget",
+            "Label": "targetgroup/cluster1-tg/24002ae3e283dc5c RequestCountPerTarget",
             "StatusCode": "Complete",
-            "Timestamps": [
-                "2022-10-15T18:44:00+00:00",
-                "2022-10-15T18:43:00+00:00",
-                "2022-10-15T18:42:00+00:00",
-                "2022-10-15T18:41:00+00:00",
-                "2022-10-15T18:40:00+00:00",
-                "2022-10-15T18:39:00+00:00"
-            ],
-            "Values": [
-                0.0,
-                88.0,
-                92.2,
-                154.39999999999998,
-                56.8,
-                0.0
-            ]
+            "Timestamps": [],
+            "Values": []
         },
         {
             "Id": "requestcountpertargettargetgroup2",
-            "Label": "targetgroup/cluster2-tg/5e20617dcb20042b RequestCountPerTarget",
+            "Label": "targetgroup/cluster2-tg/ecce210a25c28f47 RequestCountPerTarget",
             "StatusCode": "Complete",
-            "Timestamps": [
-                "2022-10-15T18:44:00+00:00",
-                "2022-10-15T18:43:00+00:00",
-                "2022-10-15T18:42:00+00:00",
-                "2022-10-15T18:41:00+00:00",
-                "2022-10-15T18:40:00+00:00",
-                "2022-10-15T18:39:00+00:00"
-            ],
-            "Values": [
-                0.0,
-                109.75,
-                115.75,
-                192.5,
-                71.5,
-                0.0
-            ]
+            "Timestamps": [],
+            "Values": []
         },
         {
             "Id": "newconnectioncountloadbalancer1",
-            "Label": "app/cluster1-elb/f4c0cd02c00c9ee3 NewConnectionCount",
+            "Label": "app/cluster1-elb/bc8cd2f822491d41 NewConnectionCount",
             "StatusCode": "Complete",
-            "Timestamps": [
-                "2022-10-15T18:43:00+00:00",
-                "2022-10-15T18:42:00+00:00",
-                "2022-10-15T18:41:00+00:00",
-                "2022-10-15T18:40:00+00:00"
-            ],
-            "Values": [
-                880.0,
-                922.0,
-                1544.0,
-                568.0
-            ]
+            "Timestamps": [],
+            "Values": []
         },
         {
             "Id": "processedbytesloadbalancer1",
-            "Label": "app/cluster1-elb/f4c0cd02c00c9ee3 ProcessedBytes",
+            "Label": "app/cluster1-elb/bc8cd2f822491d41 ProcessedBytes",
             "StatusCode": "Complete",
-            "Timestamps": [
-                "2022-10-15T18:43:00+00:00",
-                "2022-10-15T18:42:00+00:00",
-                "2022-10-15T18:41:00+00:00",
-                "2022-10-15T18:40:00+00:00"
-            ],
-            "Values": [
-                189200.0,
-                198230.0,
-                331960.0,
-                122120.0
-            ]
+            "Timestamps": [],
+            "Values": []
         },
         {
             "Id": "targetresponsetimeloadbalancer1",
-            "Label": "app/cluster1-elb/f4c0cd02c00c9ee3 TargetResponseTime",
+            "Label": "app/cluster1-elb/bc8cd2f822491d41 TargetResponseTime",
             "StatusCode": "Complete",
-            "Timestamps": [
-                "2022-10-15T18:43:00+00:00",
-                "2022-10-15T18:42:00+00:00",
-                "2022-10-15T18:41:00+00:00",
-                "2022-10-15T18:40:00+00:00"
-            ],
-            "Values": [
-                0.8519220000000001,
-                0.883156,
-                1.49748,
-                0.554727
-            ]
+            "Timestamps": [],
+            "Values": []
         },
         {
             "Id": "newconnectioncountloadbalancer2",
-            "Label": "app/cluster2-elb/ea2f1c57784e5106 NewConnectionCount",
+            "Label": "app/cluster2-elb/aac2bb2a5ebfd18b NewConnectionCount",
             "StatusCode": "Complete",
-            "Timestamps": [
-                "2022-10-15T18:43:00+00:00",
-                "2022-10-15T18:42:00+00:00",
-                "2022-10-15T18:41:00+00:00",
-                "2022-10-15T18:40:00+00:00"
-            ],
-            "Values": [
-                878.0,
-                926.0,
-                1540.0,
-                572.0
-            ]
+            "Timestamps": [],
+            "Values": []
         },
         {
             "Id": "processedbytesloadbalancer2",
-            "Label": "app/cluster2-elb/ea2f1c57784e5106 ProcessedBytes",
+            "Label": "app/cluster2-elb/aac2bb2a5ebfd18b ProcessedBytes",
             "StatusCode": "Complete",
-            "Timestamps": [
-                "2022-10-15T18:43:00+00:00",
-                "2022-10-15T18:42:00+00:00",
-                "2022-10-15T18:41:00+00:00",
-                "2022-10-15T18:40:00+00:00"
-            ],
-            "Values": [
-                188770.0,
-                199090.0,
-                331100.0,
-                122980.0
-            ]
+            "Timestamps": [],
+            "Values": []
         },
         {
             "Id": "targetresponsetimeloadbalancer2",
-            "Label": "app/cluster2-elb/ea2f1c57784e5106 TargetResponseTime",
+            "Label": "app/cluster2-elb/aac2bb2a5ebfd18b TargetResponseTime",
             "StatusCode": "Complete",
-            "Timestamps": [
-                "2022-10-15T18:43:00+00:00",
-                "2022-10-15T18:42:00+00:00",
-                "2022-10-15T18:41:00+00:00",
-                "2022-10-15T18:40:00+00:00"
-            ],
-            "Values": [
-                0.847179,
-                0.875508,
-                2.032626,
-                0.772302
-            ]
+            "Timestamps": [],
+            "Values": []
         }
     ],
     "ResponseMetadata": {
         "HTTPHeaders": {
-            "content-length": "5520",
+            "content-length": "2238",
             "content-type": "text/xml",
-            "date": "Sat, 15 Oct 2022 18:45:22 GMT",
-            "x-amzn-requestid": "b4e74f26-e722-4c2f-9c75-cba68da3d3d8"
+            "date": "Tue, 25 Oct 2022 03:03:59 GMT",
+            "x-amzn-requestid": "85c2f233-62dd-46e9-86da-e73a3bd58cce"
         },
         "HTTPStatusCode": 200,
-        "RequestId": "b4e74f26-e722-4c2f-9c75-cba68da3d3d8",
+        "RequestId": "85c2f233-62dd-46e9-86da-e73a3bd58cce",
         "RetryAttempts": 0
     }
 }
