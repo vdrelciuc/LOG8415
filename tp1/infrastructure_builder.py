@@ -89,11 +89,11 @@ class InfrastructureBuilder:
             Targets=targets
         )
 
-    def create_listener(self, target_group, load_balancer):
+    def create_listener(self, tg_cluster1, load_balancer):
         return self.elb_client.create_listener(
             DefaultActions=[
                 {
-                    'TargetGroupArn': target_group['TargetGroups'][0]['TargetGroupArn'],
+                    'TargetGroupArn': tg_cluster1['TargetGroups'][0]['TargetGroupArn'],
                     'Type': 'forward',
                 },
             ],
@@ -102,5 +102,34 @@ class InfrastructureBuilder:
             Protocol='HTTP',
         )
 
-    
+    def create_path_forward_rule(self, tg_cluster, listener, path, priority):
+        return self.elb_client.create_rule(
+            ListenerArn = listener['Listeners'][0]['ListenerArn'],
+            Conditions=[
+                {
+                    'Field': 'path-pattern',
+                    'Values': [
+                        path
+                    ]
+                }
+            ],
+            Priority=priority,
+            Actions=[
+                {
+                    'Type': 'forward',
+                    'ForwardConfig': {
+                        'TargetGroups': [
+                            {
+                                'TargetGroupArn': tg_cluster['TargetGroups'][0]['TargetGroupArn'],
+                                'Weight': 1
+                            },
+                        ],
+                        'TargetGroupStickinessConfig': {
+                            'Enabled': False,
+                            'DurationSeconds': 1
+                        }
+                    }
+                }
+            ]
+        )
 

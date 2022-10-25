@@ -22,21 +22,22 @@ def initialize_infra(infra_builder):
     m4_Instances = infra_builder.create_instances('m4.large', 5, 'ami-08c40ec9ead489470', 'vockey', user_data_cluster1, security_group.group_name)
     t2_Instances = infra_builder.create_instances('t2.large', 4, 'ami-08c40ec9ead489470', 'vockey', user_data_cluster2, security_group.group_name)
 
-    cluster1_elb = infra_builder.create_load_balancer('cluster1-elb', security_group.id)
-    cluster2_elb = infra_builder.create_load_balancer('cluster2-elb', security_group.id)
+    elb = infra_builder.create_load_balancer('elb', security_group.id)
 
-    cluster1_tg = infra_builder.create_target_group('cluster1-tg')
-    cluster2_tg = infra_builder.create_target_group('cluster2-tg')
+    cluster1_tg = infra_builder.create_target_group('cluster1')
+    cluster2_tg = infra_builder.create_target_group('cluster2')
 
     infra_builder.register_targets(cluster1_tg, m4_Instances)
     infra_builder.register_targets(cluster2_tg, t2_Instances)
 
-    listener_cluster1 = infra_builder.create_listener(cluster1_tg, cluster1_elb)
-    listener_cluster2 = infra_builder.create_listener(cluster2_tg, cluster2_elb)
+    listener = infra_builder.create_listener(cluster1_tg, elb)
+
+    listener_rule_1 = infra_builder.create_path_forward_rule(cluster1_tg, listener, '/cluster1', 1)
+    listener_rule_2 = infra_builder.create_path_forward_rule(cluster2_tg, listener, '/cluster2', 2)
 
     print('Finished initializing infrastructure.')
 
-    return cluster1_elb, cluster2_elb, security_group, m4_Instances, t2_Instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg
+    return elb, security_group, m4_Instances, t2_Instances, listener, cluster1_tg, cluster2_tg
 
 def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
@@ -54,11 +55,11 @@ def print_response(response):
 
 # 1. Generate infrastructure (EC2 instances, load balancers and target groups)
 infra_builder = InfrastructureBuilder()
-cluster1_elb, cluster2_elb, sg, m4_instances, t2_instances, listener_cluster1, listener_cluster2, cluster1_tg, cluster2_tg = initialize_infra(infra_builder=infra_builder)
+elb, sg, m4_instances, t2_instances, listener_cluster, cluster1_tg, cluster2_tg = initialize_infra(infra_builder=infra_builder)
 time.sleep(90)
 
 # 2. Run workloads
-run_workloads(cluster1_elb, cluster2_elb)
+run_workloads(elb)
 
 # 3. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 cloudwatch_monitor = CloudWatchMonitor()
