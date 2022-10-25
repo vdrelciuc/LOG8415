@@ -11,9 +11,11 @@ from matplotlib.dates import (DateFormatter)
 # Metrics selected from https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html
 TARGET_GROUP_CLOUDWATCH_METRICS = ['RequestCountPerTarget']
 ELB_CLOUDWATCH_METRICS = ['NewConnectionCount', 'ProcessedBytes', 'TargetResponseTime']
+EC2_CLOUDWATCH_METRICS = ['CPUUtilization', 'NetworkIn', 'NetworkOut']
 
 elb_metrics_count = len(ELB_CLOUDWATCH_METRICS)
 tg_metrics_count = len(TARGET_GROUP_CLOUDWATCH_METRICS)
+ecs_metrics_count = len(EC2_CLOUDWATCH_METRICS)
 
 class CloudWatchMonitor:
 
