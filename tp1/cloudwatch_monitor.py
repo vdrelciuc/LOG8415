@@ -102,21 +102,28 @@ class CloudWatchMonitor:
         print('ecs_metrics', ecs_metrics)
         return tg_metrics_cluster1, tg_metrics_cluster2, elb_metrics, ecs_metrics
 
-    def generate_graphs(self, metrics_cluster1, metrics_cluster2):
+    def generate_graphs(self, tg_metrics_cluster1, tg_metrics_cluster2, elb_metrics, ecs_metrics):
         print('Generating graphs under graphs/.')
-        for i in range(len(metrics_cluster1)):
-            data_cluster1 = MetricData(metrics_cluster1[i])
-            data_cluster2 = MetricData(metrics_cluster2[i])
+
+        self.generate_metric_groups_graphs(tg_metrics_cluster1, tg_metrics_cluster2)
+        self.generate_metric_groups_graphs(elb_metrics)
+        self.generate_metric_groups_graphs(ecs_metrics)
+
+    def generate_metric_groups_graphs(self, *metric_groups):
+        for i in range(len(metric_groups[0])):
+            data_groups = [MetricData(group[i]) for group in metric_groups]
+
             formatter = DateFormatter("%H:%M:%S")
-            label = data_cluster1.label
+            label = data_groups[0].label
 
             fig, ax = plt.subplots()
             ax.xaxis.set_major_formatter(formatter)
             plt.xlabel("Timestamps")
-            plt.plot(data_cluster1.timestamps, data_cluster1.values, label="Cluster 1")
-            plt.plot(data_cluster2.timestamps, data_cluster2.values, label="Cluster 2")
+            for data in data_groups:
+                plt.plot(data.timestamps, data.values, label=getattr(data, "grouplabel", None))
             plt.title(label)
-            plt.legend(loc='best')
-            plt.savefig(f"graphs/{label}")
+            if len(data_groups) > 1:
+                plt.legend(loc='best')
 
-    
+            plt.savefig(f"graphs/{label}")
+            plt.close()

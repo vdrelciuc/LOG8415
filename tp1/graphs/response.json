@@ -3,70 +3,442 @@
     "MetricDataResults": [
         {
             "Id": "requestcountpertargettargetgroup1",
-            "Label": "targetgroup/cluster1-tg/24002ae3e283dc5c RequestCountPerTarget",
+            "Label": "AWS/ApplicationELB targetgroup/cluster1/4492de10943ec7ff RequestCountPerTarget",
             "StatusCode": "Complete",
-            "Timestamps": [],
-            "Values": []
+            "Timestamps": [
+                "2022-10-27T06:09:00+00:00",
+                "2022-10-27T06:08:00+00:00",
+                "2022-10-27T06:07:00+00:00",
+                "2022-10-27T06:06:00+00:00",
+                "2022-10-27T06:03:00+00:00",
+                "2022-10-27T06:02:00+00:00",
+                "2022-10-27T06:01:00+00:00",
+                "2022-10-27T06:00:00+00:00",
+                "2022-10-27T05:57:00+00:00",
+                "2022-10-27T05:56:00+00:00",
+                "2022-10-27T05:55:00+00:00",
+                "2022-10-27T05:54:00+00:00",
+                "2022-10-27T05:53:00+00:00",
+                "2022-10-27T05:52:00+00:00",
+                "2022-10-27T05:51:00+00:00",
+                "2022-10-27T05:50:00+00:00",
+                "2022-10-27T05:49:00+00:00",
+                "2022-10-27T05:48:00+00:00",
+                "2022-10-27T05:47:00+00:00",
+                "2022-10-27T05:46:00+00:00",
+                "2022-10-27T05:45:00+00:00",
+                "2022-10-27T05:44:00+00:00",
+                "2022-10-27T05:43:00+00:00",
+                "2022-10-27T05:42:00+00:00",
+                "2022-10-27T05:41:00+00:00",
+                "2022-10-27T05:40:00+00:00"
+            ],
+            "Values": [
+                1.4,
+                148.0,
+                49.4,
+                0.0,
+                12.799999999999999,
+                150.2,
+                37.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
         },
         {
             "Id": "requestcountpertargettargetgroup2",
-            "Label": "targetgroup/cluster2-tg/ecce210a25c28f47 RequestCountPerTarget",
+            "Label": "AWS/ApplicationELB targetgroup/cluster2/4cc6eabd8d6b0b29 RequestCountPerTarget",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:09:00+00:00",
+                "2022-10-27T06:08:00+00:00",
+                "2022-10-27T06:07:00+00:00",
+                "2022-10-27T06:06:00+00:00",
+                "2022-10-27T06:03:00+00:00",
+                "2022-10-27T06:02:00+00:00",
+                "2022-10-27T06:01:00+00:00",
+                "2022-10-27T06:00:00+00:00",
+                "2022-10-27T05:57:00+00:00",
+                "2022-10-27T05:56:00+00:00",
+                "2022-10-27T05:55:00+00:00",
+                "2022-10-27T05:54:00+00:00",
+                "2022-10-27T05:53:00+00:00",
+                "2022-10-27T05:52:00+00:00",
+                "2022-10-27T05:51:00+00:00",
+                "2022-10-27T05:50:00+00:00",
+                "2022-10-27T05:49:00+00:00",
+                "2022-10-27T05:48:00+00:00",
+                "2022-10-27T05:47:00+00:00",
+                "2022-10-27T05:46:00+00:00",
+                "2022-10-27T05:45:00+00:00",
+                "2022-10-27T05:44:00+00:00",
+                "2022-10-27T05:43:00+00:00",
+                "2022-10-27T05:42:00+00:00",
+                "2022-10-27T05:41:00+00:00",
+                "2022-10-27T05:40:00+00:00"
+            ],
+            "Values": [
+                83.5,
+                62.25,
+                62.75,
+                0.0,
+                63.25,
+                79.25,
+                45.75,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        {
+            "Id": "newconnectioncountloadbalancer",
+            "Label": "AWS/ApplicationELB app/elb/8ed5f7490aec0b35 NewConnectionCount",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:03:00+00:00",
+                "2022-10-27T06:02:00+00:00",
+                "2022-10-27T06:01:00+00:00"
+            ],
+            "Values": [
+                634.0,
+                2096.0,
+                690.0
+            ]
+        },
+        {
+            "Id": "processedbytesloadbalancer",
+            "Label": "AWS/ApplicationELB app/elb/8ed5f7490aec0b35 ProcessedBytes",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:03:00+00:00",
+                "2022-10-27T06:02:00+00:00",
+                "2022-10-27T06:01:00+00:00"
+            ],
+            "Values": [
+                136310.0,
+                461640.0,
+                161000.0
+            ]
+        },
+        {
+            "Id": "targetresponsetimeloadbalancer",
+            "Label": "AWS/ApplicationELB app/elb/8ed5f7490aec0b35 TargetResponseTime",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:03:00+00:00",
+                "2022-10-27T06:02:00+00:00",
+                "2022-10-27T06:01:00+00:00"
+            ],
+            "Values": [
+                0.62313,
+                2.011524,
+                0.664693
+            ]
+        },
+        {
+            "Id": "cpuutilizationinstanceid0dbc0f765d6b2a076",
+            "Label": "AWS/EC2 i-0dbc0f765d6b2a076 CPUUtilization",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:04:00+00:00"
+            ],
+            "Values": [
+                36.1696767620635
+            ]
+        },
+        {
+            "Id": "networkininstanceid0dbc0f765d6b2a076",
+            "Label": "AWS/EC2 i-0dbc0f765d6b2a076 NetworkIn",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:04:00+00:00"
+            ],
+            "Values": [
+                110363133.0
+            ]
+        },
+        {
+            "Id": "networkoutinstanceid0dbc0f765d6b2a076",
+            "Label": "AWS/EC2 i-0dbc0f765d6b2a076 NetworkOut",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:04:00+00:00"
+            ],
+            "Values": [
+                870692.0
+            ]
+        },
+        {
+            "Id": "cpuutilizationinstanceid0673f52bd3b39cdbe",
+            "Label": "AWS/EC2 i-0673f52bd3b39cdbe CPUUtilization",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                34.44973140687226
+            ]
+        },
+        {
+            "Id": "networkininstanceid0673f52bd3b39cdbe",
+            "Label": "AWS/EC2 i-0673f52bd3b39cdbe NetworkIn",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                110375084.0
+            ]
+        },
+        {
+            "Id": "networkoutinstanceid0673f52bd3b39cdbe",
+            "Label": "AWS/EC2 i-0673f52bd3b39cdbe NetworkOut",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                864834.0
+            ]
+        },
+        {
+            "Id": "cpuutilizationinstanceid03739323c3b0c0f85",
+            "Label": "AWS/EC2 i-03739323c3b0c0f85 CPUUtilization",
             "StatusCode": "Complete",
             "Timestamps": [],
             "Values": []
         },
         {
-            "Id": "newconnectioncountloadbalancer1",
-            "Label": "app/cluster1-elb/bc8cd2f822491d41 NewConnectionCount",
+            "Id": "networkininstanceid03739323c3b0c0f85",
+            "Label": "AWS/EC2 i-03739323c3b0c0f85 NetworkIn",
             "StatusCode": "Complete",
             "Timestamps": [],
             "Values": []
         },
         {
-            "Id": "processedbytesloadbalancer1",
-            "Label": "app/cluster1-elb/bc8cd2f822491d41 ProcessedBytes",
+            "Id": "networkoutinstanceid03739323c3b0c0f85",
+            "Label": "AWS/EC2 i-03739323c3b0c0f85 NetworkOut",
             "StatusCode": "Complete",
             "Timestamps": [],
             "Values": []
         },
         {
-            "Id": "targetresponsetimeloadbalancer1",
-            "Label": "app/cluster1-elb/bc8cd2f822491d41 TargetResponseTime",
+            "Id": "cpuutilizationinstanceid0c5ba10e81dba1811",
+            "Label": "AWS/EC2 i-0c5ba10e81dba1811 CPUUtilization",
             "StatusCode": "Complete",
             "Timestamps": [],
             "Values": []
         },
         {
-            "Id": "newconnectioncountloadbalancer2",
-            "Label": "app/cluster2-elb/aac2bb2a5ebfd18b NewConnectionCount",
+            "Id": "networkininstanceid0c5ba10e81dba1811",
+            "Label": "AWS/EC2 i-0c5ba10e81dba1811 NetworkIn",
             "StatusCode": "Complete",
             "Timestamps": [],
             "Values": []
         },
         {
-            "Id": "processedbytesloadbalancer2",
-            "Label": "app/cluster2-elb/aac2bb2a5ebfd18b ProcessedBytes",
+            "Id": "networkoutinstanceid0c5ba10e81dba1811",
+            "Label": "AWS/EC2 i-0c5ba10e81dba1811 NetworkOut",
             "StatusCode": "Complete",
             "Timestamps": [],
             "Values": []
         },
         {
-            "Id": "targetresponsetimeloadbalancer2",
-            "Label": "app/cluster2-elb/aac2bb2a5ebfd18b TargetResponseTime",
+            "Id": "cpuutilizationinstanceid073f1feed96897e9e",
+            "Label": "AWS/EC2 i-073f1feed96897e9e CPUUtilization",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                29.00301009539683
+            ]
+        },
+        {
+            "Id": "networkininstanceid073f1feed96897e9e",
+            "Label": "AWS/EC2 i-073f1feed96897e9e NetworkIn",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                110316572.0
+            ]
+        },
+        {
+            "Id": "networkoutinstanceid073f1feed96897e9e",
+            "Label": "AWS/EC2 i-073f1feed96897e9e NetworkOut",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                712052.0
+            ]
+        },
+        {
+            "Id": "cpuutilizationinstanceid01eab72841ed7e194",
+            "Label": "AWS/EC2 i-01eab72841ed7e194 CPUUtilization",
             "StatusCode": "Complete",
             "Timestamps": [],
             "Values": []
+        },
+        {
+            "Id": "networkininstanceid01eab72841ed7e194",
+            "Label": "AWS/EC2 i-01eab72841ed7e194 NetworkIn",
+            "StatusCode": "Complete",
+            "Timestamps": [],
+            "Values": []
+        },
+        {
+            "Id": "networkoutinstanceid01eab72841ed7e194",
+            "Label": "AWS/EC2 i-01eab72841ed7e194 NetworkOut",
+            "StatusCode": "Complete",
+            "Timestamps": [],
+            "Values": []
+        },
+        {
+            "Id": "cpuutilizationinstanceid0290a12ccf2980430",
+            "Label": "AWS/EC2 i-0290a12ccf2980430 CPUUtilization",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                35.649949059924
+            ]
+        },
+        {
+            "Id": "networkininstanceid0290a12ccf2980430",
+            "Label": "AWS/EC2 i-0290a12ccf2980430 NetworkIn",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                110207459.0
+            ]
+        },
+        {
+            "Id": "networkoutinstanceid0290a12ccf2980430",
+            "Label": "AWS/EC2 i-0290a12ccf2980430 NetworkOut",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:05:00+00:00"
+            ],
+            "Values": [
+                916579.0
+            ]
+        },
+        {
+            "Id": "cpuutilizationinstanceid0c50fb3c1b2d72b34",
+            "Label": "AWS/EC2 i-0c50fb3c1b2d72b34 CPUUtilization",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:03:00+00:00"
+            ],
+            "Values": [
+                23.207835509863855
+            ]
+        },
+        {
+            "Id": "networkininstanceid0c50fb3c1b2d72b34",
+            "Label": "AWS/EC2 i-0c50fb3c1b2d72b34 NetworkIn",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:03:00+00:00"
+            ],
+            "Values": [
+                109715114.0
+            ]
+        },
+        {
+            "Id": "networkoutinstanceid0c50fb3c1b2d72b34",
+            "Label": "AWS/EC2 i-0c50fb3c1b2d72b34 NetworkOut",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:03:00+00:00"
+            ],
+            "Values": [
+                866827.0
+            ]
+        },
+        {
+            "Id": "cpuutilizationinstanceid0238289747d37fcc7",
+            "Label": "AWS/EC2 i-0238289747d37fcc7 CPUUtilization",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:02:00+00:00"
+            ],
+            "Values": [
+                34.3220338983051
+            ]
+        },
+        {
+            "Id": "networkininstanceid0238289747d37fcc7",
+            "Label": "AWS/EC2 i-0238289747d37fcc7 NetworkIn",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:02:00+00:00"
+            ],
+            "Values": [
+                109955901.0
+            ]
+        },
+        {
+            "Id": "networkoutinstanceid0238289747d37fcc7",
+            "Label": "AWS/EC2 i-0238289747d37fcc7 NetworkOut",
+            "StatusCode": "Complete",
+            "Timestamps": [
+                "2022-10-27T06:02:00+00:00"
+            ],
+            "Values": [
+                715033.0
+            ]
         }
     ],
     "ResponseMetadata": {
         "HTTPHeaders": {
-            "content-length": "2238",
+            "content-length": "15203",
             "content-type": "text/xml",
-            "date": "Tue, 25 Oct 2022 03:03:59 GMT",
-            "x-amzn-requestid": "85c2f233-62dd-46e9-86da-e73a3bd58cce"
+            "date": "Thu, 27 Oct 2022 06:10:38 GMT",
+            "x-amzn-requestid": "3f4ed211-7dc3-4b01-aed8-4f867c6172ae"
         },
         "HTTPStatusCode": 200,
-        "RequestId": "85c2f233-62dd-46e9-86da-e73a3bd58cce",
+        "RequestId": "3f4ed211-7dc3-4b01-aed8-4f867c6172ae",
         "RetryAttempts": 0
     }
 }
