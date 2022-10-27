@@ -63,7 +63,7 @@ run_workloads(elb)
 
 # 3. Build query to collect desired metrics from the last 30 minutes (estimated max workload time)
 cloudwatch_monitor = CloudWatchMonitor()
-query = cloudwatch_monitor.build_cloudwatch_query()
+query = cloudwatch_monitor.build_cloudwatch_query(m4_instances + t2_instances)
 
 # 4. Query CloudWatch client using built query
 response = cloudwatch_monitor.get_data(query)
@@ -72,9 +72,9 @@ response = cloudwatch_monitor.get_data(query)
 print_response(response)
 
 # 6. Parse MetricDataResults and store metrics
-(metrics_cluster1, metrics_cluster2) = cloudwatch_monitor.parse_data(response)
+(tg_metrics_cluster1, tg_metrics_cluster2, elb_metrics, ecs_metrics) = cloudwatch_monitor.parse_data(response)
 
 # 7. Generate graphs and save under /metrics folder
-cloudwatch_monitor.generate_graphs(metrics_cluster1, metrics_cluster2)
+# cloudwatch_monitor.generate_graphs(metrics_cluster1, metrics_cluster2)
 
 print('Done.')
