@@ -6,9 +6,11 @@ class MetricData:
             self.grouplabel = label.split("/")[2]
             label = label.split(" ")
             label = label.pop()
+        elif "AWS/ApplicationELB" in label:
+            label = "ApplicationELB-" + label.split(" ").pop()
         else:
-            label = label.replace("/", "_")
-            label = label.replace(" ", "-")
+            self.grouplabel = label.split(" ")[1]
+            label = "EC2-" + label.split(" ").pop()
 
         self.label = label
         self.timestamps = metric["Timestamps"]

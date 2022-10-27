@@ -102,28 +102,54 @@ class CloudWatchMonitor:
         print('ecs_metrics', ecs_metrics)
         return tg_metrics_cluster1, tg_metrics_cluster2, elb_metrics, ecs_metrics
 
+    def group_ecs_metrics(self, ecs_metrics):
+        grouped_ecs_metrics = []
+        i = 0
+        while i < len(ecs_metrics):
+            group = []
+            for _ in range(len(EC2_CLOUDWATCH_METRICS)):
+                group.append(ecs_metrics[i])
+                i += 1
+            grouped_ecs_metrics.append(group)
+
+        return grouped_ecs_metrics
+
     def generate_graphs(self, tg_metrics_cluster1, tg_metrics_cluster2, elb_metrics, ecs_metrics):
         print('Generating graphs under graphs/.')
 
-        self.generate_metric_groups_graphs(tg_metrics_cluster1, tg_metrics_cluster2)
-        self.generate_metric_groups_graphs(elb_metrics)
-        self.generate_metric_groups_graphs(ecs_metrics)
+        self.generate_metric_groups_graphs([tg_metrics_cluster1, tg_metrics_cluster2])
+        self.generate_metric_groups_graphs([elb_metrics])
+        self.generate_metric_groups_graphs(ecs_metrics, True)
 
-    def generate_metric_groups_graphs(self, *metric_groups):
+    def generate_metric_groups_graphs(self, metric_groups, bar=False):
         for i in range(len(metric_groups[0])):
             data_groups = [MetricData(group[i]) for group in metric_groups]
 
-            formatter = DateFormatter("%H:%M:%S")
             label = data_groups[0].label
 
             fig, ax = plt.subplots()
-            ax.xaxis.set_major_formatter(formatter)
-            plt.xlabel("Timestamps")
+            if not bar:
+                formatter = DateFormatter("%H:%M:%S")
+                ax.xaxis.set_major_formatter(formatter)
+                plt.xlabel("Timestamps")
+            else:
+                plt.xlabel("Instances")
+
             for data in data_groups:
-                plt.plot(data.timestamps, data.values, label=getattr(data, "grouplabel", None))
-            plt.title(label)
-            if len(data_groups) > 1:
+                if not bar:
+                    plt.plot(data.timestamps, data.values, label=getattr(data, "grouplabel", None))
+                else:
+                    plt.bar(data.grouplabel, data.values[0])
+
+            if not bar:
+                plt.title(label)
+            else:
+                plt.title("Average " + label)
+
+            if len(data_groups) > 1 and not bar:
                 plt.legend(loc='best')
 
+            plt.xticks(rotation=90)
+            plt.tight_layout()
             plt.savefig(f"graphs/{label}")
             plt.close()

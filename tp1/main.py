@@ -74,6 +74,8 @@ print_response(response)
 # 6. Parse MetricDataResults and store metrics
 (tg_metrics_cluster1, tg_metrics_cluster2, elb_metrics, ecs_metrics) = cloudwatch_monitor.parse_data(response)
 
+ecs_metrics = cloudwatch_monitor.group_ecs_metrics(ecs_metrics)
+
 # 7. Generate graphs and save under /metrics folder
 cloudwatch_monitor.generate_graphs(tg_metrics_cluster1, tg_metrics_cluster2, elb_metrics, ecs_metrics)
 
