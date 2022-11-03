@@ -1,7 +1,8 @@
-package com.log8415;
+package main.java;
 
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -9,6 +10,7 @@ import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapreduce.Job;
 
 public class SocialNetworkProblem {
     public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, Text, Friendship> {
@@ -32,5 +34,14 @@ public class SocialNetworkProblem {
                 }
             }
         }
+    }
+
+    public static void main(String[] args) throws IOException {
+        Configuration configuration = new Configuration();
+
+        Job job = Job.getInstance(configuration, "social_network_problem");
+        job.setJarByClass(SocialNetworkProblem.class);
+        job.setMapOutputKeyClass(Map.class);
+        job.setOutputValueClass(Friendship.class);
     }
 }

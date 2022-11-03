@@ -1,4 +1,4 @@
-package com.log8415;
+package main.java;
 
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.Text;
