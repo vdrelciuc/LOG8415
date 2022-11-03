@@ -50,8 +50,8 @@ public class SocialNetworkProblem {
             ArrayList<String> friendsTracker = new ArrayList<String>();
             while (values.hasNext()) {
                 final Friendship val = values.next();
-                String person = val.person.toString();
-                if (val.friendship.get() == -1) {
+                String person = val.user.toString();
+                if (val.isFriend.get() == -1) {
                     friendsTracker.add(person);
                 }
                 else if (!friendsTracker.contains(person)) {
