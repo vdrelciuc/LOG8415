@@ -41,8 +41,8 @@ public class SocialNetworkProblem {
             HashMap<String, MutableInt> recommendations = new HashMap<>();
             ArrayList<String> friendsTracker = new ArrayList();
             for (Friendship val : values) {
-                String person = val.person.toString();
-                if (val.friendship.get() == -1) {
+                String person = val.user.toString();
+                if (val.isFriend.get() == -1) {
                     friendsTracker.add(person);
                 }
                 else if (!friendsTracker.contains(person)) {
@@ -66,6 +66,9 @@ public class SocialNetworkProblem {
                         if (res == 0)
                         {
                             return e2.getValue().compreTo(e1.getValue());
+                        }
+                        else {
+                            return res;
                         }
                     }
                 };
