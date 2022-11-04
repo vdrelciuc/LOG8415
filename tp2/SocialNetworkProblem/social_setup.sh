@@ -15,11 +15,11 @@ fi
 cd ~/SocialNetworkProblem
 
 # Remove the ConnectionRecommendations directory if it exists
-if [ -d "ConnectionRecommendations" ]; then
-  rm -rf ConnectionRecommendations
+if [ -d "output/dataset" ]; then
+  rm -rf output/dataset
 fi
 
 mvn clean install
 
 # Execute our app in Hadoop
-hadoop jar target/SocialNetworkProblem.jar src/main/resources/test.txt ConnectionRecommendations
+hadoop jar target/SocialNetworkProblem.jar src/main/resources/dataset.txt output/dataset

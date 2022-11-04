@@ -15,7 +15,7 @@ public class Friendship implements Writable {
     public Friendship() {
     }
 
-    public Friendship(Text friend, IntWritable relation){
+    public Friendship(Text friend, IntWritable relation) {
         this.user = friend;
         this.isFriend = relation;
     }
@@ -30,5 +30,13 @@ public class Friendship implements Writable {
     public void write(DataOutput dataOutput) throws IOException {
         this.user.write(dataOutput);
         this.isFriend.write(dataOutput);
+    }
+
+    @Override
+    public String toString() {
+        return "Friendship{" +
+            "user=" + user +
+            ", isFriend=" + (isFriend.get() == 1 ? "maybe" : "yes") +
+            '}';
     }
 }
