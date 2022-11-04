@@ -12,6 +12,9 @@ public class Friendship implements Writable {
     Text user = new Text();
     IntWritable isFriend = new IntWritable();
 
+    public Friendship() {
+    }
+
     public Friendship(Text friend, IntWritable relation){
         this.user = friend;
         this.isFriend = relation;

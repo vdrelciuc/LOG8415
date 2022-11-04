@@ -4,7 +4,7 @@
 # Assumes the source code is available on the target VM (under ~/SocialNetworkProblem)
 
 # Install maven if not already installed
-if ! command -v mvn &> /dev/null
+if ! command -v mvn
 then
   echo "Maven not found. Installing..."
   sudo apt install -y maven
@@ -13,7 +13,13 @@ fi
 
 # Generate JAR file from project
 cd ~/SocialNetworkProblem
+
+# Remove the ConnectionRecommendations directory if it exists
+if [ -d "ConnectionRecommendations" ]; then
+  rm -rf ConnectionRecommendations
+fi
+
 mvn clean install
 
 # Execute our app in Hadoop
-hadoop jar target/SocialNetworkProblem.jar src/main/resources/soc-LiveJournal1Adj.txt ConnectionRecommendations.txt
+hadoop jar target/SocialNetworkProblem.jar src/main/resources/test.txt ConnectionRecommendations
