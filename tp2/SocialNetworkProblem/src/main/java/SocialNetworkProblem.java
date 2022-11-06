@@ -26,24 +26,36 @@ import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
 
 public class SocialNetworkProblem {
+    /*
+     * Map class
+     * 
+     * This class is used to map the users and theirs friends and ouputs it.
+     * 
+     * Inherits from the MapReduceBase class in to order to use MapReduce.
+     */
     public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, Text, Friendship> {
         final IntWritable isFriend = new IntWritable(-1);
         final IntWritable isMaybeFriend = new IntWritable(1);
 
         @Override
         public void map(LongWritable key, Text value, OutputCollector<Text, Friendship> output, Reporter reporter) throws IOException {
+            // We collect the data from the dataset
             String[] userLine = value.toString().split("\\s");
 
             Text id = new Text(userLine[0]);
-            if (userLine.length < 2) {
+            if (userLine.length < 2) { // The user has no friends.
                 output.collect(id, new Friendship());
                 return;
             }
             String[] friends = userLine[1].split(",");
 
             for (int i = 0; i < friends.length; i++) {
+                // We create the friendship between the user and the current firend
                 Text friend = new Text(friends[i]);
                 output.collect(id, new Friendship(friend, isFriend));
+
+                // We iterate over the rest of the user's friends and create a potential friendship between the current friend
+                // and the others 
                 for (int j = i + 1; j < friends.length; j++) {
                     Text maybeFriend = new Text(friends[j]);
                     output.collect(friend, new Friendship(maybeFriend, isMaybeFriend));
