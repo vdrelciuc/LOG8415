@@ -31,7 +31,9 @@ public class SocialNetworkProblem {
      * 
      * This class is used to map the users and theirs friends and ouputs it.
      * 
-     * Inherits from the MapReduceBase class in to order to use MapReduce.
+     * Inherits from the MapReduceBase as it is a Mapreduce functionality.
+     * 
+     * Implements the Mapper interface.
      */
     public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, Text, Friendship> {
         final IntWritable isFriend = new IntWritable(-1);
@@ -50,12 +52,12 @@ public class SocialNetworkProblem {
             String[] friends = userLine[1].split(",");
 
             for (int i = 0; i < friends.length; i++) {
-                // We create the friendship between the user and the current firend
+                //We create the friendship between the user and the current firend
                 Text friend = new Text(friends[i]);
                 output.collect(id, new Friendship(friend, isFriend));
 
-                // We iterate over the rest of the user's friends and create a potential friendship between the current friend
-                // and the others 
+                //We iterate over the rest of the user's friends and create a potential friendship between the current friend
+                //and the others 
                 for (int j = i + 1; j < friends.length; j++) {
                     Text maybeFriend = new Text(friends[j]);
                     output.collect(friend, new Friendship(maybeFriend, isMaybeFriend));
@@ -65,20 +67,34 @@ public class SocialNetworkProblem {
         }
     }
 
+    /*
+     * Reduce class
+     * 
+     * This class divides the map in order to solve the Social Network Problem and find the different friend recommandations
+     * for the users.
+     * 
+     * Inherits from the MapReduceBase as it is a Mapreduce functionality.
+     * 
+     * Implements the Reducer Interface 
+     */
+
     public static class Reduce extends MapReduceBase implements Reducer<Text, Friendship, Text, Text> {
         public void reduce(Text key, Iterator<Friendship> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-            HashMap<String, MutableInt> recommendations = new HashMap<>();
-            ArrayList<String> friendsTracker = new ArrayList<String>();
+            HashMap<String, MutableInt> recommendations = new HashMap<>(); //Contains mutual friends
+            ArrayList<String> friendsTracker = new ArrayList<String>(); //Contains all the friendship relations with the user
 
+            //We iterate through each relation (friendship or potential friendship)
             while (values.hasNext()) {
                 final Friendship val = values.next();
                 String person = val.user.toString();
-                if (val.isFriend.get() == -1) {
+
+                if (val.isFriend.get() == -1) { //If they are friends
                     friendsTracker.add(person);
                 }
-                else if (!friendsTracker.contains(person)) {
+                else if (!friendsTracker.contains(person)) {  
                     MutableInt mutualFriendsCount = recommendations.get(person);
                     if (mutualFriendsCount == null) {
+                        //If not not found in the recommendations, we add that person.
                         recommendations.put(person, new MutableInt(1));
                     }
                     else {
@@ -87,6 +103,7 @@ public class SocialNetworkProblem {
                 }
             }
 
+            //This comaparator will sort the recommandations list from the mutual friends to the least.
             Comparator<Entry<String, MutableInt>> valueComparator
                 = new Comparator<Entry<String, MutableInt>>() {
                 @Override
@@ -100,10 +117,13 @@ public class SocialNetworkProblem {
                     return res;
                 }
             };
+
+            //We sort the recommendations according to the comaprator
             List<Entry<String, MutableInt>> recommendationsList = new ArrayList<Entry<String, MutableInt>>(recommendations.entrySet());
             recommendationsList.sort(valueComparator);
             ArrayList<String> recommendationsTextArr = new ArrayList<>();
 
+            //We select the 10 users with the most mutual friends
             for (int i = 0; i < 10 && i < recommendationsList.size(); i++) {
                 if (friendsTracker.contains(recommendationsList.get(i).getKey())) {
                     continue;
