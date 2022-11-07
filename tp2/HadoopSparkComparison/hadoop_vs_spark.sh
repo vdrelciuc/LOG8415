@@ -8,7 +8,7 @@ WORKING_DIR=~/hadoop_vs_spark
 # Also assumes the input files already exist in ~/inputs
 # Otherwise, please download using: wget http://www.gutenberg.ca/ebooks/buchanj-midwinter/buchanj-midwinter-00-t.txt -o ~/inputs/buchanj-midwinter-00-t.txt
 
-# Cleanup any existing Hadoop output folders
+# Cleanup any existing working directory
 rm -rf $WORKING_DIR
 mkdir $WORKING_DIR
 
@@ -46,7 +46,7 @@ testSpark() {
     for i in 1 2 3;
     do
         echo "Run #$i:" >> $WORKING_DIR/spark_performance.txt
-        # Because Spark and 'time' both output in STDERR (in addition of Spark outputting to STDOUT), we discard STDOUT and tail only the last 3 lines of STDERR (output of 'time')
+        # Because Spark and 'time' both output in STDERR, we discard STDOUT and tail only the last 3 lines of STDERR (output of 'time')
         { time -p ./bin/run-example JavaWordCount ~/inputs/$1 > /dev/null ; } 2> $WORKING_DIR/temp.txt
         cat $WORKING_DIR/temp.txt | tail -3 >> $WORKING_DIR/spark_performance.txt
         rm $WORKING_DIR/temp.txt
