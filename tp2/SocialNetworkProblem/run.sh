@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Assumes Hadoop and Maven are already installed on the remote machine
+# Otherwise, please run hadoop_setup.sh on the remote machine
+
 # How to use:
 # `./run.sh <ip> <path-to-pem> <path-to-dataset>
 # <path-to-dataset> is optional
@@ -33,9 +36,9 @@ ssh -i "$pem_path" ubuntu@"$ip" "source ~/.profile && \
 
 printf "\nSuccess!\n"
 
-printf "Downloading results to \"%s\"...\n\n" "$(pwd)/$dataset_path"
+printf "Downloading results to \"%s\"...\n\n" "$(pwd)/$output_path"
 
 mkdir -p output
-scp -ri "$pem_path" ubuntu@"$ip:~/SocialNetworkProblem/$output_path" "output/$dataset_name"
+scp -ri "$pem_path" ubuntu@"$ip:~/SocialNetworkProblem/$output_path" "$output_path"
 
 printf "\nDone!\""

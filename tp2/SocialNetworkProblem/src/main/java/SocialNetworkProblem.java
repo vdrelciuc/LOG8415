@@ -52,7 +52,7 @@ public class SocialNetworkProblem {
             String[] friends = userLine[1].split(",");
 
             for (int i = 0; i < friends.length; i++) {
-                //We create the friendship between the user and the current firend
+                //We create the friendship between the user and the current friend
                 Text friend = new Text(friends[i]);
                 output.collect(id, new Friendship(friend, isFriend));
 
@@ -103,7 +103,7 @@ public class SocialNetworkProblem {
                 }
             }
 
-            //This comaparator will sort the recommandations list from the mutual friends to the least.
+            //This comaparator will sort the recommandations list from the most mutual friends to the least.
             Comparator<Entry<String, MutableInt>> valueComparator
                 = new Comparator<Entry<String, MutableInt>>() {
                 @Override
@@ -136,6 +136,11 @@ public class SocialNetworkProblem {
         }
     }
 
+    /**
+        Main method of our app.
+        Expects first argument to be the path of the input dataset
+        Expects second argument to be the path of the output result
+     */
     public static void main(String[] args) throws IOException {
         JobConf conf = new JobConf(SocialNetworkProblem.class);
         conf.setJobName("social-network-problem");
