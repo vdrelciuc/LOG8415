@@ -1,5 +1,7 @@
 #!/bin/bash
 
+WORKING_DIR=~/hadoop_vs_spark
+
 # Assumes Hadoop and Spark are already installed on the machine
 # Otherwise, please run hadoop_setup.sh and spark_setup.sh first
 
@@ -7,33 +9,62 @@
 # Otherwise, please download using: wget http://www.gutenberg.ca/ebooks/buchanj-midwinter/buchanj-midwinter-00-t.txt -o ~/inputs/buchanj-midwinter-00-t.txt
 
 # Cleanup any existing Hadoop output folders
-if [ -d "~/outputs" ]; then
-  rm -rf ~/outputs
-fi
+rm -rf $WORKING_DIR
+mkdir $WORKING_DIR
 
-# Create Hadoop outputs parent folder
-mkdir ~/outputs
+# Benchmark Hadoop execution
+testHadoop() {
+    echo "Hadoop performance for $1:" >> $WORKING_DIR/hadoop_performance.txt
+    for i in 1 2 3;
+    do
+        echo "Run #$i:" >> $WORKING_DIR/hadoop_performance.txt
+        # Because Hadoop and 'time' both output in STDERR, we discard STDOUT and tail only the last 3 lines of STDERR (output of 'time')
+        { time -p hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/$1 $WORKING_DIR/hadoop_outputs/$1_run$i > /dev/null ; } 2> $WORKING_DIR/temp.txt
+        cat $WORKING_DIR/temp.txt | tail -3 >> $WORKING_DIR/hadoop_performance.txt
+        rm $WORKING_DIR/temp.txt
+    done
+}
 
-# Time Hadoop execution
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/buchanj-midwinter-00-t.txt ~/outputs/output1
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/carman-farhorizons-00-t.txt ~/outputs/output2
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/colby-champlain-00-t.txt ~/outputs/output3
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/cheyneyp-darkbahama-00-t.txt ~/outputs/output4
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/delamare-bumps-00-t.txt ~/outputs/output5
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/charlesworth-scene-00-t.txt ~/outputs/output6
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/delamare-lucy-00-t.txt ~/outputs/output7
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/delamare-myfanwy-00-t.txt ~/outputs/output8
-time hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount ~/inputs/delamare-penny-00-t.txt ~/outputs/output9
+touch $WORKING_DIR/hadoop_performance.txt
+
+testHadoop "buchanj-midwinter-00-t.txt"
+testHadoop "carman-farhorizons-00-t.txt"
+testHadoop "charlesworth-scene-00-t.txt"
+testHadoop "cheyneyp-darkbahama-00-t.txt"
+testHadoop "colby-champlain-00-t.txt"
+testHadoop "delamare-bumps-00-t.txt"
+testHadoop "delamare-lucy-00-t.txt"
+testHadoop "delamare-myfanwy-00-t.txt"
+testHadoop "delamare-penny-00-t.txt"
+
+cat $WORKING_DIR/hadoop_performance.txt
+echo "Hadoop performance saved in: $WORKING_DIR/hadoop_performance.txt"
+
+# Benchmark Spark execution
+testSpark() {
+    echo "Spark performance for $1:" >> $WORKING_DIR/spark_performance.txt
+    for i in 1 2 3;
+    do
+        echo "Run #$i:" >> $WORKING_DIR/spark_performance.txt
+        # Because Spark and 'time' both output in STDERR (in addition of Spark outputting to STDOUT), we discard STDOUT and tail only the last 3 lines of STDERR (output of 'time')
+        { time -p ./bin/run-example JavaWordCount ~/inputs/$1 > /dev/null ; } 2> $WORKING_DIR/temp.txt
+        cat $WORKING_DIR/temp.txt | tail -3 >> $WORKING_DIR/spark_performance.txt
+        rm $WORKING_DIR/temp.txt
+    done
+}
 
 cd /usr/local/spark/
+touch $WORKING_DIR/spark_performance.txt
 
-# Tiem Spark execution
-time ./bin/run-example JavaWordCount ~/inputs/buchanj-midwinter-00-t.txt
-time ./bin/run-example JavaWordCount ~/inputs/carman-farhorizons-00-t.txt
-time ./bin/run-example JavaWordCount ~/inputs/colby-champlain-00-t.txt
-time ./bin/run-example JavaWordCount ~/inputs/cheyneyp-darkbahama-00-t.txt
-time ./bin/run-example JavaWordCount ~/inputs/delamare-bumps-00-t.txt
-time ./bin/run-example JavaWordCount ~/inputs/charlesworth-scene-00-t.txt
-time ./bin/run-example JavaWordCount ~/inputs/delamare-lucy-00-t.txt
-time ./bin/run-example JavaWordCount ~/inputs/delamare-myfanwy-00-t.txt
-time ./bin/run-example JavaWordCount ~/inputs/delamare-penny-00-t.txt
+testSpark "buchanj-midwinter-00-t.txt"
+testSpark "carman-farhorizons-00-t.txt"
+testSpark "charlesworth-scene-00-t.txt"
+testSpark "cheyneyp-darkbahama-00-t.txt"
+testSpark "colby-champlain-00-t.txt"
+testSpark "delamare-bumps-00-t.txt"
+testSpark "delamare-lucy-00-t.txt"
+testSpark "delamare-myfanwy-00-t.txt"
+testSpark "delamare-penny-00-t.txt"
+
+cat $WORKING_DIR/spark_performance.txt
+echo "Spark performance saved in: $WORKING_DIR/spark_performance.txt"
